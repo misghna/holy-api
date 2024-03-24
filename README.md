@@ -1,5 +1,5 @@
 
-# Church Website
+# Church API
 
 Rename .env.example to .env and update mysql database connection details
 
