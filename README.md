@@ -1,10 +1,10 @@
 # Holy API
 ## How to run localy
 
-- This project is optimized to work on php 8.2, make sure you have 8.2 running 
+- This project is optimized to work on php 8.2, make sure you have 8.2 running   
 ```php --version```
 - Clone this repo & cd /church-api
-- In your local make sure mysql 8.x is running 
+- In your local make sure mysql 8.x is running   
 ```mysql --version```
 - open mysql and create a db holy by running the following sql cmd Create database "holy"
 - DB Credentials : In root of holy project directory open .env file and update the mysql credentials
@@ -18,11 +18,11 @@
 - Accesing open site APIs, example 
  ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```
  ```GET - http://localhost:8000/api/content?page=home&lang=english&start=0&id=123```
-- Accessing secured routes
-> Generate access token: 
->POST - http://localhost:8000/api/login 
->Body -> form-data email: password:
->Reponse - <Token String>
+- Accessing secured routes  
+> Generate access token:   
+>POST - http://localhost:8000/api/login   
+>Body -> form-data email: password:  
+>Reponse - <Token String>  
 - To access secured resources, add in every request an auth token 
 ```Authorisation - Bearer Token: Authorisation - Bearer Token:```
 
