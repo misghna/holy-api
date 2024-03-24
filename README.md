@@ -24,8 +24,8 @@
 - Accessing secured routes  
 > TO Generate access token:   
 >POST - http://localhost:8000/api/login   
->Body -> form-data email: password:  
->Reponse - (Token String) 
+>Body -> form-data email:(user email) password:(user pass)
+>Reponse -> (Token String) 
 - To access secured resources, add in every request an auth token   
 ```Authorisation - Bearer Token: Authorisation - Bearer Token:```
 
