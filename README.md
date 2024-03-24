@@ -22,10 +22,10 @@
  ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```  
  ```GET - http://localhost:8000/api/content?page=home&lang=english&start=0&id=123```
 - Accessing secured routes  
-> Generate access token:   
+> TO Generate access token:   
 >POST - http://localhost:8000/api/login   
 >Body -> form-data email: password:  
->Reponse - <Token String>  
+>Reponse - (Token String) 
 - To access secured resources, add in every request an auth token   
 ```Authorisation - Bearer Token: Authorisation - Bearer Token:```
 
