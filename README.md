@@ -11,7 +11,7 @@
 - Push the existing repo modals (tables) from php to db by running the following command php artisan migrate
 - Setting up api admin access authentication Edit database/seeders/UserSeeder.php file and update the following Name Email Password
 - Run Below command TO push those credentials to db   
-```php artisan db:seed --class=UserSeeder``` 
+```php artisan db:seed --class=UserSeeder```   
    ```php artisan db:seed --class=ContentSeeder```
 - To start the project, run this command:   
  ```php artisan serve```
@@ -23,7 +23,7 @@
 >POST - http://localhost:8000/api/login   
 >Body -> form-data email: password:  
 >Reponse - <Token String>  
-- To access secured resources, add in every request an auth token 
+- To access secured resources, add in every request an auth token   
 ```Authorisation - Bearer Token: Authorisation - Bearer Token:```
 
 ## License
