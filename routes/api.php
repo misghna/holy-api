@@ -24,5 +24,6 @@ Route::post('login',[UserController::class,'loginUser']);
 Route::group(['middleware' => 'auth:sanctum'],function(){
     Route::get('user',[UserController::class,'userDetails']);
     Route::get('logout',[UserController::class,'logout']);
-    Route::get('grids',[ContentController::class,'getContent']);
+    Route::get('grids',[ContentController::class,'all']);
+    Route::get('grid',[ContentController::class,'one']);
 });
