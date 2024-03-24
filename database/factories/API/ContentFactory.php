@@ -18,12 +18,13 @@ class ContentFactory extends Factory
     {
         $types = ['Text','Image','Video','Donate'];
         $languges = ['English','English'];
+        $category = ['Home','News','Media'];
         return [
             'type' => $types[rand(0,2)],
             'background_image' => fake()->imageUrl(),
             'content' => fake()->paragraph(),
             'media_link' => fake()->imageUrl(),
-            'content_category' => fake()->company(),
+            'content_category' => $category[rand(0,2)],
             'language' => $languges[rand(0,1)],
             'created_at' => now(),
             'updated_at' => now()

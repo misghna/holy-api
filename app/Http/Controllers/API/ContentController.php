@@ -11,9 +11,11 @@ class ContentController extends Controller
 {
     public function all(Request $request)
     {
+        $page = $request->input("page");
         $lang = $request->input('lang');
         $start = $request->input('start');
         $content = Content::where("language", $lang)
+            ->where("content_category", $page)
             ->offset($start)
             ->limit(10)
             ->get();
@@ -21,11 +23,13 @@ class ContentController extends Controller
     }
     public function one(Request $request)
     {
+        $page = $request->input("page");
         $id = $request->input('id');
         $lang = $request->input('lang');
         $start = $request->input('start');
         $content = Content::where("id", $id)
             ->where("language", $lang)
+            ->where("content_category", $page)
             ->offset($start)
             ->limit(10)
             ->get();

@@ -15,15 +15,11 @@ use App\Http\Controllers\API\UserController;
 |
 */
 
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
 Route::post('login',[UserController::class,'loginUser']);
+Route::get('contents',[ContentController::class,'all']);
+Route::get('content',[ContentController::class,'one']);
 
-
-Route::group(['middleware' => 'auth:sanctum'],function(){
+Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function() {
     Route::get('user',[UserController::class,'userDetails']);
     Route::get('logout',[UserController::class,'logout']);
-    Route::get('grids',[ContentController::class,'all']);
-    Route::get('grid',[ContentController::class,'one']);
 });
