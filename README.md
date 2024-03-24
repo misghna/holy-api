@@ -18,8 +18,8 @@
    ```php artisan db:seed --class=ContentSeeder```
 - To start the project, run this command:   
  ```php artisan serve```
-- Accesing open site APIs, example 
- ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```
+- Accesing open site APIs, example   
+ ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```  
  ```GET - http://localhost:8000/api/content?page=home&lang=english&start=0&id=123```
 - Accessing secured routes  
 > Generate access token:   
