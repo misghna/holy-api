@@ -27,8 +27,9 @@
 >POST - http://localhost:8000/api/login   
 >Body -> form-data email:(holy.admin@gmail.com) password:(pass@123)  
 >Reponse - (Token String) 
-- To access secured resources, add in every request an auth token   
-```Authorisation - Bearer Token: Authorisation - Bearer Token:```
+- To access secured resources,use the secure endpoint path stracture (/api/secure/*) add in every request an auth token   
+```Authorisation - Bearer Token: Authorisation - Bearer Token:```  
+```Example : /api/secure/user```
 
 ## License
 
