@@ -1,63 +1,55 @@
 <?php
 
-declare(strict_types=1);
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 
-use Slim\Factory\AppFactory;
-use DI\ContainerBuilder;
-use Slim\Handlers\Strategies\RequestResponseArgs;
-use App\Middleware\AddJsonResponseHeader;
-use App\Controllers\GridIndex;
-use App\Controllers\Grids;
-use App\Middleware\GetGrid;
-use Slim\Routing\RouteCollectorProxy;
+define('LARAVEL_START', microtime(true));
 
-define('APP_ROOT', dirname(__DIR__));
+/*
+|--------------------------------------------------------------------------
+| Check If The Application Is Under Maintenance
+|--------------------------------------------------------------------------
+|
+| If the application is in maintenance / demo mode via the "down" command
+| we will load this file so that any pre-rendered content can be shown
+| instead of starting the framework, which could cause an exception.
+|
+*/
 
-require APP_ROOT . '/vendor/autoload.php';
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
 
-$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+/*
+|--------------------------------------------------------------------------
+| Register The Auto Loader
+|--------------------------------------------------------------------------
+|
+| Composer provides a convenient, automatically generated class loader for
+| this application. We just need to utilize it! We'll simply require it
+| into the script here so we don't need to manually load our classes.
+|
+*/
 
-$dotenv->load();
+require __DIR__.'/../vendor/autoload.php';
 
-$builder = new ContainerBuilder;
+/*
+|--------------------------------------------------------------------------
+| Run The Application
+|--------------------------------------------------------------------------
+|
+| Once we have the application, we can handle the incoming request using
+| the application's HTTP kernel. Then, we will send the response back
+| to this client's browser, allowing them to enjoy our application.
+|
+*/
 
-$container = $builder->addDefinitions(APP_ROOT . '/config/definitions.php')
-                     ->build();
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-AppFactory::setContainer($container);
+$kernel = $app->make(Kernel::class);
 
-$app = AppFactory::create();
+$response = $kernel->handle(
+    $request = Request::capture()
+)->send();
 
-$collector = $app->getRouteCollector();
-
-$collector->setDefaultInvocationStrategy(new RequestResponseArgs);
-
-$app->addBodyParsingMiddleware();
-
-$error_middleware = $app->addErrorMiddleware(true, true, true);
-
-$error_handler = $error_middleware->getDefaultErrorHandler();
-
-$error_handler->forceContentType('application/json');
-
-$app->add(new AddJsonResponseHeader);
-
-$app->group('/api', function (RouteCollectorProxy $group) {
-
-    $group->get('/grids', GridIndex::class);
-
-    $group->post('/grids', [Grids::class, 'create']);
-
-    $group->group('', function (RouteCollectorProxy $group) {
-
-        $group->get('/grids/{id:[0-9]+}', Grids::class . ':show');
-
-        $group->patch('/grids/{id:[0-9]+}', Grids::class . ':update');
-
-        $group->delete('/grids/{id:[0-9]+}', Grids::class . ':delete');
-
-    })->add(GetGrid::class);
-
-});
-
-$app->run();
+$kernel->terminate($request, $response);
