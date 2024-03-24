@@ -10,10 +10,10 @@
 - DB Credentials : In root of holy project directory open .env file and update the mysql credentials
 - Push the existing repo modals (tables) from php to db by running the following command php artisan migrate
 - Setting up api admin access authentication Edit database/seeders/UserSeeder.php file and update the following Name Email Password
-- Run Below command TO push those credentials to db 
+- Run Below command TO push those credentials to db   
 ```php artisan db:seed --class=UserSeeder``` 
    ```php artisan db:seed --class=ContentSeeder```
-- To start the project, run this command: 
+- To start the project, run this command:   
  ```php artisan serve```
 - Accesing open site APIs, example 
  ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```
