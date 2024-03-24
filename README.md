@@ -9,7 +9,7 @@ Run Below command:
 
 `php artisan migrate`
 
-Edit database/seeders/UserSeeder.php file and update your details
+Edit _database/seeders/UserSeeder.php_ file and update your details
 
 	Name <Your Email>
 	Email <Your Email>
