@@ -1,4 +1,8 @@
 # Holy - API ENGINE
+
+## Introduction
+Holy is an open-source web application, crafted by a team of volunteer engineers. While it's versatile enough to be used for any blog site, its primary design is aimed at serving Churches and Temples.
+
 ## How to run localy
 
 - This project is optimized to work on php 8.2, make sure you have 8.2 running   
