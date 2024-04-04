@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\ContentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\FileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,4 +23,9 @@ Route::get('content',[ContentController::class,'one']);
 Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function() {
     Route::get('user',[UserController::class,'userDetails']);
     Route::get('logout',[UserController::class,'logout']);
+    Route::controller(FileController::class)->group(function(){
+        Route::get('file', 'index');
+        Route::post('file', 'store');
+        Route::delete('file', 'destroy'); 
+    });
 });
