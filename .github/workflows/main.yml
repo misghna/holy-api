@@ -13,4 +13,4 @@ jobs:
       with:
         server: holydemo.com
         username: holydemo_ftp_admin
-        password: ${{ ftp_password }}
+        password: ${{ secrets.ftp_password }}
