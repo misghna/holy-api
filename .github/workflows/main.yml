@@ -1,7 +1,7 @@
 on: push
-name: 🚀 Deploy website on push
+name: 🚀 Deploy on push
 jobs:
-  web-deploy:
+  public-deploy:
     name: 🎉 Deploy
     runs-on: ubuntu-latest
     steps:
@@ -15,5 +15,5 @@ jobs:
         username: u483864572.holydemo_ftp_admin
         password: ${{secrets.FTP_PASSWORD}}
         port: 21
-        server-dir : "public_html/"
+        server-dir : "/"
         local-dir : "./public/"
