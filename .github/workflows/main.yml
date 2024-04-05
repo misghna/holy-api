@@ -12,6 +12,6 @@ jobs:
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: holydemo.com
-        username: holydemo_ftp_admin
+        username: u483864572.holydemo_ftp_admin
         password: ${{secrets.FTP_PASSWORD}}
         port: 21
