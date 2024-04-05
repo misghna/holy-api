@@ -37,7 +37,7 @@ jobs:
         username: u483864572.holydemo_ftp_admin
         password: ${{secrets.FTP_PASSWORD}}
         port: 21
-        server-dir : /public_html 
+        server-dir : /public_html/ 
         local-dir : ./public/
         exclude: |
           **/.git*
