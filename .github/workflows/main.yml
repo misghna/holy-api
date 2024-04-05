@@ -1,8 +1,8 @@
 on: push
 name: 🚀 Deploy on push
 jobs:
-  public-deploy:
-    name: 🎉 Deploy
+  private-deploy:
+    name: 🎉 Private Deploy
     runs-on: ubuntu-latest
     steps:
     - name: 🚚 Get latest code
@@ -17,3 +17,29 @@ jobs:
         port: 21
         server-dir : / 
         local-dir : ./public/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/public/**
+
+  public-deploy:
+    name: 🎉 Public Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+    
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: holydemo.com
+        username: u483864572.holydemo_ftp_admin
+        password: ${{secrets.FTP_PASSWORD}}
+        port: 21
+        server-dir : /public_html 
+        local-dir : ./public/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
