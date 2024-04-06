@@ -14,60 +14,50 @@ class ContentController extends Controller
     {
         $page = $request->input("page");
         $lang = $request->input('lang');
-        $start = $request->input('start');
+        $start = $request->input('start', 0); // Default to 0 if not provided
+        $limit = $request->input('limit', 10); // Default to 10 if not provided
+
         $content = Content::where("language", $lang)
             ->where("content_category", $page)
             ->offset($start)
-            ->limit(10)
+            ->limit($limit)
             ->get();
+
         return $content;
     }
+
     public function one(Request $request)
     {
         $page = $request->input("page");
         $id = $request->input('id');
         $lang = $request->input('lang');
-        $start = $request->input('start');
+        $start = $request->input('start', 0); // Default to 0 if not provided
+        $limit = $request->input('limit', 10); // Default to 10 if not provided
+
         $content = Content::where("id", $id)
             ->where("language", $lang)
             ->where("content_category", $page)
             ->offset($start)
-            ->limit(10)
+            ->limit($limit)
             ->get();
+
         return $content;
     }
 
-    /**
-     * Get all documents with associated files.
-     * Merges the documents table with the files table where document.id = files.group_id.
-     * @param  Request  $request
-     * @return array
-     */
     public function getAllDocumentsWithFiles(Request $request)
     {
         $lang = $request->input('lang');
-        $start = $request->input('start');
-        
-        // Retrieve documents from the database
-        $documents = Content::where("language", $lang)
+        $start = $request->input('start', 0); // Default to 0 if not provided
+        $limit = $request->input('limit', 10); // Default to 10 if not provided
+
+        // Using table join to retrieve documents with associated files
+        $documents = Content::leftJoin('files', 'content.id', '=', 'files.group_id')
+            ->where("content.language", $lang)
+            ->select('content.id', 'content.type', 'content.description', 'content.created_by', 'content.created_at', 'files.file_name')
             ->offset($start)
-            ->limit(10)
+            ->limit($limit)
             ->get();
-        
-        // Merge documents with files
-        $mergedDocuments = [];
-        foreach ($documents as $document) {
-            $files = File::where('group_id', $document->id)->pluck('file_name')->toArray();
-            $mergedDocument = [
-                'id' => $document->id,
-                'type' => $document->type,
-                'description' => $document->description,
-                'links' => $files,
-                'created_by' => $document->created_by,
-                'created_at' => $document->created_at,
-            ];
-            $mergedDocuments[] = $mergedDocument;
-        }
-        return $mergedDocuments;
+
+        return $documents;
     }
 }
