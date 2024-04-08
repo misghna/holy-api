@@ -44,6 +44,7 @@ class ContentController extends Controller
         return $content;
     }
 
+    //GET Call:
     public function getAllDocumentsWithFiles(Request $request)
     {
         $lang = $request->input('lang');
@@ -60,4 +61,78 @@ class ContentController extends Controller
 
         return $documents;
     }
+
+    //UPDATE Call:
+    public function update(Request $request)
+    {
+        $this->validate($request, [
+            'id' => 'required|string',
+            'type' => 'required|string',
+            'description' => 'required|string',
+        ]);
+
+        $id = $request->input('id');
+        $type = $request->input('type');
+        $description = $request->input('description');
+
+        $content = Content::find($id);
+
+        if (!$content) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        // Update the document
+        $content->type = $type;
+        $content->description = $description;
+        $content->save();
+
+        return response()->json($content, 200);
+    }
+
+    //POST call:
+    public function insert(Request $request)
+    {
+        $this->validate($request, [
+            'id' => 'required|string',
+            'type' => 'required|string',
+            'description' => 'required|string',
+        ]);
+
+        $id = $request->input('id');
+        $type = $request->input('type');
+        $description = $request->input('description');
+
+        // Create a new content instance
+        $content = new Content();
+        $content->id = $id;
+        $content->type = $type;
+        $content->description = $description;
+
+        // Save the new content to the database
+        $content->save();
+
+        return response()->json($content, 200);
+    }
+
+    // DELETE call:
+    public function delete(Request $request)
+    {
+        $id = $request->input('id');
+
+        // Find the content document by its ID
+        $content = Content::find($id);
+
+        if (!$content) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+        
+        // Delete associated files
+        File::where('group_id', $id)->delete();
+
+        // Delete the content document
+        $content->delete();
+
+        return response()->json(['message' => 'Document deleted successfully'], 200);
+    }
+
 }
