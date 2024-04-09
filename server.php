@@ -13,4 +13,8 @@ if ($uri !== '/' && file_exists($publicPath.$uri)) {
     return false;
 }
 
+<<<<<<< HEAD
 require_once $publicPath.'/api_index.php';
+=======
+require_once $publicPath.'/api_index.php';
+>>>>>>> 6b7760b (minor setup changes)
