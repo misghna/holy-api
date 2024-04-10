@@ -1,7 +1,7 @@
 on: push
-name: 🚀 Deploy on push
+name: 🚀 Deploy API Engine on push
 jobs:
-  private-deploy:
+  api-engine-deploy:
     name: 🎉 Private Deploy
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +21,7 @@ jobs:
           **/.git*
           **/.git*/**
           **/public/**
+          **/vendor/**
           **/.env*
     - name: 📂 Server php file Sync
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
