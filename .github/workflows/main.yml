@@ -30,7 +30,7 @@ jobs:
         username: u483864572.holydemo_ftp_admin
         password: ${{secrets.FTP_PASSWORD}}
         port: 21
-        local-dir: "server.php"
+        local-dir: "/server.php"
         server-dir : "/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
     - name: 📂 Public Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
