@@ -20,25 +20,11 @@ jobs:
         exclude: |
           **/.git*
           **/.git*/**
-          **/public/**
+          **/public_html/**
+          **/vendor/**
+          **/routes/**
+          **/storage/**
           **/.env*
-    - name: 📂 Server php file Sync
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: holydemo.com
-        username: u483864572.holydemo_ftp_admin
-        password: ${{secrets.FTP_PASSWORD}}
-        port: 21
-        local-dir: ./prod_files/
-        server-dir : /vendor/laravel/framework/src/Illuminate/Foundation/resources/
-    - name: 📂 Public Sync files
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: holydemo.com
-        username: u483864572.holydemo_ftp_admin
-        password: ${{secrets.FTP_PASSWORD}}
-        port: 21
-        server-dir : /public_html/ 
-        local-dir : ./public_html/
+
 
 
