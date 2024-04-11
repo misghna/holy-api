@@ -21,7 +21,6 @@ jobs:
           **/.git*
           **/.git*/**
           **/public/**
-          **/vendor/**
           **/.env*
     - name: 📂 Server php file Sync
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
