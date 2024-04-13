@@ -27,7 +27,7 @@ class ContentConfigController extends Controller
             'updated_by' => 'required|string',
         ]);
 
-        $contentConfig = ConfigConfig::create([
+        $contentConfig = ContentConfig::create([
             'type' => $validatedData['type'],
             'title' => $validatedData['title'],
             'description' => $validatedData['description'],
