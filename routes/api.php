@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\ContentController;
+use App\Http\Controllers\API\DocumentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\FileController;
@@ -27,5 +28,11 @@ Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function()
         Route::get('file', 'index');
         Route::post('file', 'store');
         Route::delete('file', 'destroy'); 
+    });
+    Route::controller(DocumentController::class)->group(function(){
+        Route::get('documents', 'index');
+        Route::post('documents', 'store');
+        Route::put('documents', 'update');
+        Route::delete('documents', 'destroy'); 
     });
 });

@@ -8,11 +8,7 @@ use App\Models\API\File;
 
 class FileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    
     public function index(Request $request)
     {
         $fileId = $request->input('file_id');
@@ -24,11 +20,6 @@ class FileController extends Controller
             return "file not found";
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         // $request->validate([
@@ -36,7 +27,8 @@ class FileController extends Controller
         //     'files.*' => 'required|mimes:pdf,xlx,csv|max:2048',
 
         // ]);
-        $uuid = time() . rand(1, 99);
+        // $uuid = time() . rand(1, 99);
+        $uuid = $request->group_id;
         $files = [];
         if ($request->file('files')) {
             $index = 1;

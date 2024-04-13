@@ -18,6 +18,6 @@ class File extends Model
     */
     public function content()
     {
-        return $this->belongsTo(Content::class, 'group_id');
+        return $this->belongsTo(Document::class, 'group_id');
     }
 }
