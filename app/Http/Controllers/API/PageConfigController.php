@@ -7,11 +7,12 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\API\PageConfig;
+use Illuminate\Support\Facades\Auth;
 
 class PageConfigController extends Controller
 {
 
-    public function createPageConfig(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
             'page_type' => 'required|string',
@@ -21,7 +22,6 @@ class PageConfigController extends Controller
             'parent' => 'required|string',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-            'updated_by' => 'required|string',
         ]);
 
         $pageConfig = PageConfig::create([
@@ -32,7 +32,7 @@ class PageConfigController extends Controller
             'parent' => $validatedData['parent'],
             'header_img' => $validatedData['header_img'],
             'header_text' => $validatedData['header_text'],
-            'updated_by' => $validatedData['updated_by'],
+            'updated_by' => Auth::user()->id,
         ]);
 
         return response()->json([
@@ -43,11 +43,9 @@ class PageConfigController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        //echo "<pre>"; print_r($request); exit;
-        $id = $request->input('id');
-        $pageConfig = PageConfig::findOrFail($id);
-
+    
         $validatedData = $request->validate([
+            'id' => 'required|integer',
             'page_type' => 'required|string',
             'name' => 'required|string',
             'description' => 'required|string',
@@ -55,9 +53,9 @@ class PageConfigController extends Controller
             'parent' => 'required|string',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-            'updated_by' => 'required|string',
         ]);
-
+        $id = $request->input('id');
+        $pageConfig = PageConfig::findOrFail($id);
         $pageConfig->fill($validatedData);
         $pageConfig->save();
 
@@ -70,31 +68,37 @@ class PageConfigController extends Controller
 
     public function all(Request $request)
     {
+        $request->validate([
+            'page' => 'required|integer',
+            'start' => 'required|string'
+        ]);
         $page = $request->input("page");
-        // $name = $request->input('name');
-        $start = $request->input('start');
+        $start = $request->input('start', 0);
+        $limit = $request->input('limit', 10); 
         $content = PageConfig::where("page_type", $page)
             ->offset($start)
-            ->limit(10)
+            ->limit($limit)
             ->get();
         return $content;
     }
     public function one(Request $request)
     {
+        $request->validate([
+            'id' => 'required|integer',
+            'page' => 'required|string'
+        ]);
         $page = $request->input("page");
         $id = $request->input('id');
-        // $name = $request->input('name');
-        $start = $request->input('start');
         $content = PageConfig::where("id", $id)
-            // ->where("name", $name)
             ->where("page_type", $page)
-            ->offset($start)
-            ->limit(10)
-            ->get();
+            ->first();
         return $content;
     }
     public function destroy(Request $request)
     {
+        $request->validate([
+            'id' => 'required|integer',
+        ]);
         $id = $request->input('id');
         $response = PageConfig::where('id', $id)->delete();
         if ($response)

@@ -21,13 +21,18 @@ class ContentFactory extends Factory
         $category = ['Home','News','Media'];
         return [
             'type' => $types[rand(0,2)],
+            'title' => 'names',
             'background_image' => fake()->imageUrl(),
-            'content' => fake()->paragraph(),
+            'content_text' => 'parent',
+            'description' => fake()->paragraph(),
             'media_link' => fake()->imageUrl(),
             'content_category' => $category[rand(0,2)],
-            'language' => $languges[rand(0,1)],
+            'lang' => $languges[rand(0,1)],
+            "is_original" => true,
+            "auto_translate" => true,
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
+            'is_draft' => true
         ];
     }
 }

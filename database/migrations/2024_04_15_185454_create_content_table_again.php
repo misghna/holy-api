@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('content_config', function (Blueprint $table) {
+        Schema::create('content', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['Text','Image','Video','Donate'])->default('Text');
             $table->string('title');
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('content_config');
+        Schema::dropIfExists('content_table_again');
     }
 };

@@ -37,16 +37,16 @@ Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function()
         Route::put('documents', 'update');
         Route::delete('documents', 'destroy');
     });
-
-    Route::get('page_configs',[PageConfigController::class,'all']);
-    Route::get('page_config',[PageConfigController::class,'one']);
-    Route::post('page_config',[PageConfigController::class,'createPageConfig']);
-    Route::put('page_config/update',[PageConfigController::class,'update']);
-    Route::delete('page_config', [PageConfigController::class,'destroy']);
-
-    Route::get('content_configs',[ContentConfigController::class,'all']);
-    Route::get('content_config',[ContentConfigController::class,'one']);
-    Route::post('content_config',[ContentConfigController::class,'createContentConfig']);
-    Route::put('content_config/update',[ContentConfigController::class,'update']);
-    Route::delete('content_config', [ContentConfigController::class,'destroy']);
+    Route::controller(PageConfigController::class)->group(function(){
+        Route::get('page_configs', 'all');
+        Route::get('page_config', 'one');
+        Route::post('page_config', 'store');
+        Route::put('page_config', 'update');
+        Route::delete('page_config', 'destroy');
+    });
+    Route::controller(ContentController::class)->group(function(){
+        Route::post('content', 'store');
+        Route::put('content', 'update');
+        Route::delete('content', 'destroy');
+    });
 });
