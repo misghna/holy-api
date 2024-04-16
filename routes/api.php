@@ -20,6 +20,7 @@ use App\Http\Controllers\API\ContentConfigController;
 */
 
 Route::post('login',[UserController::class,'loginUser']);
+Route::post('refresh-token', [UserController::class, 'refreshToken']);
 Route::get('contents',[ContentController::class,'all']);
 Route::get('content',[ContentController::class,'one']);
 

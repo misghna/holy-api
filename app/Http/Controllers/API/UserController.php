@@ -29,12 +29,35 @@ class UserController extends Controller
 
             $user = Auth::user(); 
     
-            $success =  $user->createToken('MyApp')->plainTextToken; 
-        
-            return Response(['token' => $success],200);
+            $accessToken =  $user->createToken('MyApp')->plainTextToken; 
+            $refreshToken = $user->createToken('RefreshToken')->plainTextToken;
+    
+            return response()->json([
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken
+            ], 200);
         }
 
-        return Response(['message' => 'email or password wrong'],401);
+        return response()->json(['message' => 'Email or password is wrong'], 401);
+
+    }
+
+    /**Adding a new API endpoint for refreshing tokens if needed. */
+    public function refreshToken(Request $request): Response
+    {
+        $request->validate([
+            'refresh_token' => 'required',
+        ]);
+
+        if (Auth::user()->tokens()->delete()) {
+            $user = Auth::user();
+            $accessToken = $user->createToken('MyApp')->plainTextToken;
+        
+            return response()->json([
+                'access_token' => $accessToken,
+            ], 200);
+        }
+        return response()->json(['message' => 'Invalid refresh token'], 401);
     }
 
     /**
