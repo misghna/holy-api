@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\API\Content;
 use App\Models\API\File;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ContentController extends Controller
 {
@@ -82,6 +84,8 @@ class ContentController extends Controller
 
     public function all(Request $request)
     {
+        $timestamp = (int) round(Carbon::parse('2024-04-16 04:18:11')->format('Uu') / pow(10, 6 - 3));
+
         $request->validate([
             'content_category' => 'required|string',
             'lang' => 'required|string',
@@ -93,6 +97,7 @@ class ContentController extends Controller
         $limit = $request->input('limit', 10); // Default to 10 if not provided
 
         $content = Content::where("lang", $lang)
+            ->select('content.id', 'content.lang', 'content.type','content.title','content.media_link','content.description','content.background_image','content.content_category',DB::raw('UNIX_TIMESTAMP(created_at)*1000 AS release_date_time'))
             ->where("content_category", $content_category)
             ->offset($start)
             ->limit($limit)
@@ -113,6 +118,7 @@ class ContentController extends Controller
         $lang = $request->input('lang');
 
         $content = Content::where("id", $id)
+            ->select('content.id', 'content.lang', 'content.type','content.title','content.media_link','content.description','content.background_image','content.content_category',DB::raw('UNIX_TIMESTAMP(created_at)*1000 AS release_date_time'))
             ->where("lang", $lang)
             ->where("content_category", $content_category)
             ->first();
