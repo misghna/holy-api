@@ -23,4 +23,9 @@ class Content extends Model
         'is_draft',
         'updated_by'
     ];
+
+    public function media_links()
+    {
+        return $this->hasMany(File::class, 'group_id');
+    }
 }

@@ -84,8 +84,6 @@ class ContentController extends Controller
 
     public function all(Request $request)
     {
-        $timestamp = (int) round(Carbon::parse('2024-04-16 04:18:11')->format('Uu') / pow(10, 6 - 3));
-
         $request->validate([
             'content_category' => 'required|string',
             'lang' => 'required|string',
@@ -96,8 +94,8 @@ class ContentController extends Controller
         $start = $request->input('start', 0); // Default to 0 if not provided
         $limit = $request->input('limit', 10); // Default to 10 if not provided
 
-        $content = Content::where("lang", $lang)
-            ->select('content.id', 'content.lang', 'content.type','content.title','content.media_link','content.description','content.background_image','content.content_category',DB::raw('UNIX_TIMESTAMP(created_at)*1000 AS release_date_time'))
+        $content = Content::with('media_links')->where("lang", $lang)
+            ->select('content.id', 'content.lang', 'content.type','content.title','content.media_link','content.description','content.background_image','content.content_text','content.content_category',DB::raw('UNIX_TIMESTAMP(created_at)*1000 AS release_date_time'))
             ->where("content_category", $content_category)
             ->offset($start)
             ->limit($limit)
