@@ -35,6 +35,18 @@ Holy is an open-source web application, crafted by a team of volunteer engineers
 ```Authorisation - Bearer Token: Authorisation - Bearer Token:```  
 ```Example : /api/secure/user```
 
+**To Refresh Access Token:**
+
+POST - http://localhost:8000/api/refresh-token
+Body -> form-data
+  refresh_token: <refresh_token_string>
+
+Response:
+  {
+    "access_token": "<new_access_token_string>",
+    "expires_at": "YYYY-MM-DD HH:MM:SS" // Expiration time of new access token
+  }
+
 ## Kanban board : Clickup
 signup for for fee and request admin for invite
 ```https://app.clickup.com/9014227579/v/b/li/901402296735```
