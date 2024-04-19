@@ -21,43 +21,22 @@ class UserController extends Controller
         ]);
    
         if($validator->fails()){
-
             return Response(['message' => $validator->errors()],401);
         }
-   
         if(Auth::attempt($request->all())){
-
             $user = Auth::user(); 
-    
-            $accessToken =  $user->createToken('MyApp')->plainTextToken; 
-            $refreshToken = $user->createToken('RefreshToken')->plainTextToken;
-    
-            return response()->json([
+            $accessToken = $user->createToken('MyApp', ['server:login'])->plainTextToken;
+            $refreshToken = $user->createToken('MyAppRefreshToken', ['server:refresh'])->plainTextToken;
+
+            return Response([
                 'access_token' => $accessToken,
-                'refresh_token' => $refreshToken
+                'refresh_token' => $refreshToken,
+                // Access token expires in 60 minutes - Can be adjusted as needed
+                'expires_at' => now()->addMinutes(60)->toDateTimeString(),
             ], 200);
         }
 
-        return response()->json(['message' => 'Email or password is wrong'], 401);
-
-    }
-
-    /**Adding a new API endpoint for refreshing tokens if needed. */
-    public function refreshToken(Request $request): Response
-    {
-        $request->validate([
-            'refresh_token' => 'required',
-        ]);
-
-        if (Auth::user()->tokens()->delete()) {
-            $user = Auth::user();
-            $accessToken = $user->createToken('MyApp')->plainTextToken;
-        
-            return response()->json([
-                'access_token' => $accessToken,
-            ], 200);
-        }
-        return response()->json(['message' => 'Invalid refresh token'], 401);
+        return Response(['message' => 'Email or password wrong'], 401);
     }
 
     /**
@@ -66,13 +45,31 @@ class UserController extends Controller
     public function userDetails(): Response
     {
         if (Auth::check()) {
-
             $user = Auth::user();
-
             return Response(['data' => $user],200);
         }
-
         return Response(['data' => 'Unauthorized'],401);
+    }
+
+    /**
+     * Refresh access token end point.
+     */
+    public function refreshToken(Request $request): Response
+    {
+        $user = $request->user();
+        $refreshToken = $request->user()->tokens()->where('name', 'MyAppRefreshToken')->first();
+
+        if (!$refreshToken) {
+            return Response(['message' => 'Refresh token not found'], 401);
+        }
+        //To revoke all existing tokens except refresh token
+        $user->tokens()->where('id', '!=', $refreshToken->id)->delete(); 
+        $accessToken = $user->createToken('MyApp', ['server:login'])->plainTextToken;
+        return Response([
+            'access_token' => $accessToken,
+            // Access token expires in 60 minutes - Can be adjusted as needed
+            'expires_at' => now()->addMinutes(60)->toDateTimeString(), 
+        ], 200);
     }
 
     /**
@@ -81,9 +78,7 @@ class UserController extends Controller
     public function logout(): Response
     {
         $user = Auth::user();
-
         $user->currentAccessToken()->delete();
-        
         return Response(['data' => 'User Logout successfully.'],200);
     }
 }
