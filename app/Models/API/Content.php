@@ -24,7 +24,7 @@ class Content extends Model
         'updated_by'
     ];
 
-    public function media_links()
+    public function media_link()
     {
         return $this->hasMany(File::class, 'group_id');
     }
