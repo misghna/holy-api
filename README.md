@@ -26,26 +26,37 @@ Holy is an open-source web application, crafted by a team of volunteer engineers
 - Accesing open site APIs, example   
  ```GET - http://localhost:8000/api/contents?page=home&lang=english&start=0```  
  ```GET - http://localhost:8000/api/content?page=home&lang=english&start=0&id=123```
-- Accessing secured routes  
-> TO Generate access token:   
->POST - http://localhost:8000/api/login   
->Body -> form-data email:(holy.admin@gmail.com) password:(pass@123)  
->Reponse - (Token String) 
-- To access secured resources,use the secure endpoint path stracture (/api/secure/*) add in every request an auth token   
-```Authorisation - Bearer Token: Authorisation - Bearer Token:```  
-```Example : /api/secure/user```
 
-**To Refresh Access Token:**
-
-POST - http://localhost:8000/api/refresh-token
-Body -> form-data
-  refresh_token: <refresh_token_string>
+**Secured Routes and Authentication:**
+>*To Generate Access Token*:
+  POST - http://localhost:8000/api/login
+    Body:
+      email: holy.admin@gmail.com
+      password: pass@123
 
 Response:
-  {
-    "access_token": "<new_access_token_string>",
-    "expires_at": "YYYY-MM-DD HH:MM:SS" // Expiration time of new access token
-  }
+{
+  "access_token": "<access_token_string>",
+  "refresh_token": "<refresh_token_string>",
+  "expires_at": "YYYY-MM-DD HH:MM:SS"
+}
+
+>Use the obtained access token in every request to secured endpoints:
+>Authorization: Bearer <access_token_string>
+
+>*To Refresh Access Token*:
+POST - http://localhost:8000/api/refresh-token
+  Body:
+    refresh_token: "<refresh_token_string>"
+
+>Obtain the refresh token string from the response of the login API.
+>Provide the refresh token string in the request body to refresh the access token.
+
+Response:
+{
+  "access_token": "<new_access_token_string>",
+  "expires_at": "YYYY-MM-DD HH:MM:SS"
+}
 
 ## Kanban board : Clickup
 signup for for fee and request admin for invite
