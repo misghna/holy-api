@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 
 class CommonController extends Controller
 {
-    public function globalSettings(Request $request): JsonResponse
-    {
-        $data = '{
+  public function globalSettings(Request $request): JsonResponse
+  {
+    $data = '{
             "menu": [
               {
                 "url": "/home",
@@ -98,15 +98,32 @@ class CommonController extends Controller
             ],
             "langs": [
               {
-                "english": "English"
+                  "id": "english",
+                  "name": "English"
               },
               {
-                "tigrigna": "ትግርኛ"
+                  "id": "tigrigna",
+                  "name": "ትግርኛ"
               },
               {
-                "arabic": "عربي"
+                  "id": "arabic",
+                  "name": "عربي"
               }
-            ],
+          ],
+          "theme_colors": [
+              {
+                  "label": "black",
+                  "hexCode": "#000000"
+              },
+              {
+                  "label": "Gray",
+                  "hexCode": "#808080"
+              },
+              {
+                  "label": "purple",
+                  "hexCode": "#800080"
+              }
+          ],
             "avatar": "DC",
             "labels": {
               "tenant": "Tenant",
@@ -139,9 +156,9 @@ class CommonController extends Controller
             "product_relase_no": "1.0.2",
             "default_theme_color": "black"
           }';
-        return response()->json(json_decode($data));
-        // return response()->json([
-        //     'data' => json_decode($data),
-        // ], 200);
-    }
+    return response()->json(json_decode($data));
+    // return response()->json([
+    //     'data' => json_decode($data),
+    // ], 200);
+  }
 }
