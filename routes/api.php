@@ -9,6 +9,7 @@ use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\API\PageConfigController;
 use App\Http\Controllers\API\ContentConfigController;
 use App\Http\Controllers\CommonController;
+use App\Http\Controllers\LanguageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +26,7 @@ Route::post('login',[UserController::class,'loginUser']);
 Route::get('contents',[ContentController::class,'all']);
 Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);
+Route::resource('languages', LanguageController::class);
 
 Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function() {
     Route::get('user',[UserController::class,'userDetails']);
