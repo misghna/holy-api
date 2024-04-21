@@ -23,6 +23,7 @@ use App\Http\Controllers\LanguageController;
 */
 
 Route::post('login',[UserController::class,'loginUser']);
+Route::post('refresh-token', [UserController::class, 'refreshToken']);
 Route::get('contents',[ContentController::class,'all']);
 Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);

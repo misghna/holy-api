@@ -21,20 +21,22 @@ class UserController extends Controller
         ]);
    
         if($validator->fails()){
-
             return Response(['message' => $validator->errors()],401);
         }
-   
         if(Auth::attempt($request->all())){
-
             $user = Auth::user(); 
-    
-            $success =  $user->createToken('MyApp')->plainTextToken; 
-        
-            return Response(['token' => $success],200);
+            $accessToken = $user->createToken('MyApp', ['server:login'])->plainTextToken;
+            $refreshToken = $user->createToken('MyAppRefreshToken', ['server:refresh'])->plainTextToken;
+
+            return Response([
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                // Access token expires in 60 minutes - Can be adjusted as needed
+                'expires_at' => now()->addMinutes(60)->toDateTimeString(),
+            ], 200);
         }
 
-        return Response(['message' => 'email or password wrong'],401);
+        return Response(['message' => 'Email or password wrong'], 401);
     }
 
     /**
@@ -43,13 +45,31 @@ class UserController extends Controller
     public function userDetails(): Response
     {
         if (Auth::check()) {
-
             $user = Auth::user();
-
             return Response(['data' => $user],200);
         }
-
         return Response(['data' => 'Unauthorized'],401);
+    }
+
+    /**
+     * Refresh access token end point.
+     */
+    public function refreshToken(Request $request): Response
+    {
+        $user = $request->user();
+        $refreshToken = $request->user()->tokens()->where('name', 'MyAppRefreshToken')->first();
+
+        if (!$refreshToken) {
+            return Response(['message' => 'Refresh token not found'], 401);
+        }
+        //To revoke all existing tokens except refresh token
+        $user->tokens()->where('id', '!=', $refreshToken->id)->delete(); 
+        $accessToken = $user->createToken('MyApp', ['server:login'])->plainTextToken;
+        return Response([
+            'access_token' => $accessToken,
+            // Access token expires in 60 minutes - Can be adjusted as needed
+            'expires_at' => now()->addMinutes(60)->toDateTimeString(), 
+        ], 200);
     }
 
     /**
@@ -58,9 +78,7 @@ class UserController extends Controller
     public function logout(): Response
     {
         $user = Auth::user();
-
         $user->currentAccessToken()->delete();
-        
         return Response(['data' => 'User Logout successfully.'],200);
     }
 }
