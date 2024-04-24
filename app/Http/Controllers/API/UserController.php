@@ -73,12 +73,13 @@ class UserController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Logout user and invalidate tokens.
      */
-    public function logout(): Response
+    public function logout(Request $request): Response
     {
-        $user = Auth::user();
-        $user->currentAccessToken()->delete();
-        return Response(['data' => 'User Logout successfully.'],200);
+        $user = $request->user();
+        $user->tokens()->delete(); // Invalidate all user tokens
+
+        return Response(['message' => 'User logout successful.'], 200);
     }
 }
