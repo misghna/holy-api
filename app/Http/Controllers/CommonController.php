@@ -179,19 +179,27 @@ class CommonController extends Controller
                         "value": "Public"
                     }
                 ],
-                "pages":
+                "content_pages":
                 [
                     {
                         "id": 1,
-                        "name": "Home"
+                        "name": "Home",
+                        "url":"/home"
                     },
                     {
                         "id": 3,
-                        "name": "Books"
+                        "name": "Books",
+                        "url":"/books"
+                    },
+                    {
+                        "id": 4,
+                        "name": "Bible",
+                        "url":"/books/bible"
                     },
                     {
                         "id": 5,
-                        "name": "Images"
+                        "name": "Images",
+                        "url":"/images"
                     }
                 ],
                 "user_name": "Dave Chapel",
