@@ -68,14 +68,9 @@ class PageConfigController extends Controller
 
     public function all(Request $request)
     {
-        $request->validate([
-            'page' => 'required|string'
-        ]);
-        $page = $request->input("page");
         $start = $request->input('start', 0);
         $limit = $request->input('limit', 10); 
-        $content = PageConfig::where("page_type", $page)
-            ->offset($start)
+        $content = PageConfig::offset($start)
             ->limit($limit)
             ->get();
         return $content;
@@ -84,12 +79,9 @@ class PageConfigController extends Controller
     {
         $request->validate([
             'id' => 'required|integer',
-            'page' => 'required|string'
         ]);
-        $page = $request->input("page");
         $id = $request->input('id');
         $content = PageConfig::where("id", $id)
-            ->where("page_type", $page)
             ->first();
         return $content;
     }

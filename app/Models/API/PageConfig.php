@@ -12,6 +12,7 @@ class PageConfig extends Model
 
     protected $fillable = [
         'page_type',
+        'page_url',
         'name',
         'description',
         'img_link',
