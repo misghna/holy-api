@@ -69,8 +69,7 @@ class PageConfigController extends Controller
     public function all(Request $request)
     {
         $request->validate([
-            'page' => 'required|integer',
-            'start' => 'required|string'
+            'page' => 'required|string'
         ]);
         $page = $request->input("page");
         $start = $request->input('start', 0);
