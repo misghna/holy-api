@@ -19,7 +19,8 @@ class PageConfig extends Model
         'parent',
         'header_img',
         'header_text',
-        'updated_by'
+        'updated_by',
+        'tenant_id'
     ];
 
 }

@@ -8,55 +8,73 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\API\PageConfig;
 use Illuminate\Support\Facades\Auth;
+use Validator;
+use Log;
 
 class PageConfigController extends Controller
 {
 
     public function store(Request $request): JsonResponse
     {
-        $validatedData = $request->validate([
+        $valRules = [
             'page_type' => 'required|string',
             'name' => 'required|string',
             'description' => 'required|string',
             'img_link' => 'required|string',
-            'parent' => 'required|string',
+            'parent' => 'required|integer',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-        ]);
+            'tenant_id' => 'required|integer'
+        ];
+        
+        $data = json_decode($request->getContent(), true);
+        $data['tenant_id'] = $request->header('tenant_id',0); 
+        $data['created_at'] = gmdate('Y-m-d H:i:s'); 
+        $data['updated_at'] = gmdate('Y-m-d H:i:s'); 
 
-        $pageConfig = PageConfig::create([
-            'page_type' => $validatedData['page_type'],
-            'name' => $validatedData['name'],
-            'description' => $validatedData['description'],
-            'img_link' => $validatedData['img_link'],
-            'parent' => $validatedData['parent'],
-            'header_img' => $validatedData['header_img'],
-            'header_text' => $validatedData['header_text'],
-            'updated_by' => Auth::user()->id,
-        ]);
+        $validator = Validator::make($data, $valRules);
+
+        if (!$validator->passes()) {
+            dd($validator->errors()->all());
+        }
+
+        $data['updated_by'] = Auth::user()->id;     
+        Log::info($data); 
+        $pageConfig = PageConfig::create($data);
 
         return response()->json([
-            'pageConfig' => $pageConfig,
+            'data' => $pageConfig,
             'message' => 'Success'
         ], 200);
+
     }
 
     public function update(Request $request): JsonResponse
-    {
-    
-        $validatedData = $request->validate([
+    {  
+        $valRules = [
             'id' => 'required|integer',
             'page_type' => 'required|string',
             'name' => 'required|string',
             'description' => 'required|string',
             'img_link' => 'required|string',
-            'parent' => 'required|string',
+            'parent' => 'required|integer',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-        ]);
-        $id = $request->input('id');
-        $pageConfig = PageConfig::findOrFail($id);
-        $pageConfig->fill($validatedData);
+            'tenant_id' => 'required|integer'
+        ];
+
+        $data = json_decode($request->getContent(), true);
+        $data['tenant_id'] = $request->header('tenant_id',0); 
+        $data['updated_at'] = gmdate('Y-m-d H:i:s');
+
+        $validator = Validator::make($data, $valRules);
+
+        if (!$validator->passes()) {
+            dd($validator->errors()->all());
+        }
+
+        $pageConfig = PageConfig::findOrFail($data['id']);
+        $pageConfig->fill($data);
         $pageConfig->save();
 
         return response()->json([
@@ -70,7 +88,9 @@ class PageConfigController extends Controller
     {
         $start = $request->input('start', 0);
         $limit = $request->input('limit', 10); 
-        $content = PageConfig::offset($start)
+        $tenantId = $request->header('tenant_id',0); 
+        $content = PageConfig::where([["tenant_id", $tenantId]])
+            ->offset($start)
             ->limit($limit)
             ->get();
         return $content;
@@ -81,7 +101,8 @@ class PageConfigController extends Controller
             'id' => 'required|integer',
         ]);
         $id = $request->input('id');
-        $content = PageConfig::where("id", $id)
+        $tenantId = $request->header('tenant_id',0); 
+        $content = PageConfig::where([["tenant_id", $tenantId],["id",$id]])
             ->first();
         return $content;
     }
@@ -91,7 +112,8 @@ class PageConfigController extends Controller
             'id' => 'required|integer',
         ]);
         $id = $request->input('id');
-        $response = PageConfig::where('id', $id)->delete();
+        $tenantId = $request->header('tenant_id',0); 
+        $response = PageConfig::where([["tenant_id",$tenantId],["id", $id]])->delete();
         if ($response)
             return "Page Config deleted successfully.";
         else return "Page Config not found";

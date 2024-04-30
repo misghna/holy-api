@@ -28,8 +28,8 @@ class PageConfigFactory extends Factory
             'header_img' => fake()->imageUrl(),
             'header_text' => $category[rand(0,2)],
             'updated_by' => $languges[rand(0,1)],
-            'created_at' => now(),
-            'updated_at' => now()
+            'created_at' => round(microtime(true) * 1000),
+            'updated_at' => round(microtime(true) * 1000)
         ];
     }
 }
