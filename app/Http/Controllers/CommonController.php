@@ -232,6 +232,23 @@ class CommonController extends Controller
         $themeColors[] = ["label" => "purple", "hexCode" => "#800080"];
         $globalSettings['theme_colors'] = $themeColors;
 
+        $labels = [];
+        $labels["tenant"] = "Tenant";
+        $labels["document"] = "Documents";
+        $labels["language"] = "Language";
+        $labels["settings"] = "Settings";
+        $labels["languages"] = "Languages";
+        $labels["theme_mode"] = "Theme Mode";
+        $labels["page_config"] = "Page Config";
+        $labels["theme_color"] = "Theme Color";
+        $labels["search_title"] = "Search";
+        $labels["translations"] = "Translations";
+        $labels["admin_settings"] = "Admin Settings";
+        $labels["other_settings"] = "Other Settings";
+        $labels["content_manager"] = "Contents";
+        $labels["action_menu_save"] = "Save";
+        $globalSettings['labels'] = $labels;
+
         $tenants = [];
         $tenants[] = ["id" => "1801", "name" => "Enda Slasie"];
         $tenants[] = ["id" => "1802", "name" => "Enda Gabr"];
