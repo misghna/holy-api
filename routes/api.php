@@ -27,6 +27,7 @@ Route::post('refresh-token', [UserController::class, 'refreshToken']);
 Route::get('contents',[ContentController::class,'all']);
 Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);
+Route::get('global_setting1',[CommonController::class,'globalSettings1']);
 Route::resource('languages', LanguageController::class);
 
 Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], function() {
