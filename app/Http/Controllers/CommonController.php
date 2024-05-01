@@ -6,6 +6,7 @@ use App\Models\API\PageConfig;
 use App\Models\Language;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use stdClass;
 
 class CommonController extends Controller
@@ -217,8 +218,8 @@ class CommonController extends Controller
     {
         $globalSettings = [];
 
-
-        $globalSettings['menu'] = $this->getMenus();
+        $pageConfig = $this->getPageConfig();
+        $globalSettings['menu'] = $this->getMenus($pageConfig);
 
         //Langs puller
         $lang_config = Language::select("lang_id AS lang_id", "lang_name AS name")->get()->toArray();
@@ -240,13 +241,12 @@ class CommonController extends Controller
         $pageTypes[] = ["key" => "public", "value" => "Public"];
         $globalSettings['page_types'] = $pageTypes;
 
-        $contentPages = [];
-        $contentPages[] = ["id" => "1", "name" => "Home", "url" => "/home"];
-        $contentPages[] = ["id" => "3", "name" => "Books", "url" => "/books"];
-        $contentPages[] = ["id" => "4", "name" => "Bible", "url" => "/books/bible"];
-        $contentPages[] = ["id" => "5", "name" => "Images", "url" => "/images"];
-        $globalSettings['content_pages'] = $contentPages;
-
+        $globalSettings['content_pages'] = $pageConfig;
+        echo "here...";
+        if (Auth::check()) {
+            echo "inside";
+            $user = Auth::user();
+        }
         $globalSettings['avatar'] = "DC";
         $globalSettings['user_name'] = "Dave Chapel";
         $globalSettings['authenticated'] = true;
@@ -259,14 +259,18 @@ class CommonController extends Controller
         return response()->json(json_decode($json));
     }
 
-    private function getMenus()
+    private function getPageConfig(){
+        $pageConfig = PageConfig::select("id", "page_type AS type", "name", "page_url AS url", "parent")->get()->toArray();
+        return $pageConfig;
+    }
+
+    private function getMenus($pageConfig)
     {
         //Menus puller
-        $page_config = PageConfig::select("id", "page_type AS type", "name", "page_url AS url", "parent")->get()->toArray();
         $itemsByReference = array();
 
         // Build array of item references:
-        foreach ($page_config as $key => &$item) {
+        foreach ($pageConfig as $key => &$item) {
             $itemsByReference[$item['id']] = &$item;
             // Children array:
             $itemsByReference[$item['id']]['sub_menu'] = array();
@@ -274,16 +278,16 @@ class CommonController extends Controller
             // $itemsByReference[$item['id']]['data'] = new stdClass();
         }
         // Set items as children of the relevant parent item.
-        foreach ($page_config as $key => &$item)
+        foreach ($pageConfig as $key => &$item)
             if ($item['parent'] && $item['parent'] != 0 && isset($itemsByReference[$item['parent']]))
                 $itemsByReference[$item['parent']]['sub_menu'][] = &$item;
 
 
         // Remove items that were added to parents elsewhere:
-        foreach ($page_config as $key => &$item) {
+        foreach ($pageConfig as $key => &$item) {
             if ($item['parent'] && isset($itemsByReference[$item['parent']]))
-                unset($page_config[$key]);
+                unset($pageConfig[$key]);
         }
-        return array_values($page_config);
+        return array_values($pageConfig);
     }
 }
