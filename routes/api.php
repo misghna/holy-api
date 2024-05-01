@@ -31,7 +31,7 @@ Route::get('global_setting',[CommonController::class,'globalSettings']);
 Route::resource('languages', LanguageController::class);
 Route::resource('tenants', TenantController::class);
 
-Route::group(['prefix' => 'secure','middleware' => ['auth:sanctum']], function() {
+Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], function() {
     Route::get('user',[UserController::class,'userDetails']);
     Route::get('logout',[UserController::class,'logout']);
     Route::controller(FileController::class)->group(function(){

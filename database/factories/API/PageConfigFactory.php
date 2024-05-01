@@ -17,7 +17,7 @@ class PageConfigFactory extends Factory
     public function definition(): array
     {
         $types = ['Text','Image','Video','Donate'];
-        $languges = ['English','English'];
+        $languges = ['english','english'];
         $category = ['Home','News','Media'];
         return [
             'page_type' => $types[rand(0,2)],
@@ -27,9 +27,12 @@ class PageConfigFactory extends Factory
             'description' => fake()->paragraph(),
             'header_img' => fake()->imageUrl(),
             'header_text' => $category[rand(0,2)],
-            'updated_by' => $languges[rand(0,1)],
-            'created_at' => now(),
-            'updated_at' => now()
+            'updated_by' => rand(0,1),
+            'tenant_id' => rand(0,1),
+            'seq_no' => rand(0,1),
+            'language' => $languges[rand(0,1)],
+            'created_at' => round(microtime(true) * 1000),
+            'updated_at' => round(microtime(true) * 1000)
         ];
     }
 }

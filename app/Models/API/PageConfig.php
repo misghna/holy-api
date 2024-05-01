@@ -12,13 +12,17 @@ class PageConfig extends Model
 
     protected $fillable = [
         'page_type',
+        'page_url',
         'name',
         'description',
         'img_link',
         'parent',
         'header_img',
         'header_text',
-        'updated_by'
+        'updated_by',
+        'tenant_id',
+        'language',
+        'seq_no'
     ];
 
 }
