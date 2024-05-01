@@ -11,10 +11,10 @@ class Tenant extends Model
     protected $fillable = [
         'tenant_id',
         'tenant_name',
-        'updated_at',
+        //'updated_at',
         'updated_by'
     ];  
 
-    public $timestamps = false;
+    //public $timestamps = false;
     
 }

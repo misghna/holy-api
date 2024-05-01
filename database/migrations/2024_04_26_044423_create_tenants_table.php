@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->integer('tenant_id');
             $table->string('tenant_name');
-            //$table->timestamps();
-            $table->bigInteger('updated_at');
+            $table->timestamps();
+            //$table->bigInteger('updated_at');
             $table->string('updated_by');
         });
     }

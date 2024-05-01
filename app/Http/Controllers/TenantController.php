@@ -13,7 +13,9 @@ class TenantController extends Controller
      */
     public function index()
     {
-        return Tenant::all();
+        //return Tenant::all();
+        $tenants = Tenant::select('id', 'tenant_id', 'tenant_name', 'updated_at', 'updated_by')->get();
+        return response()->json($tenants);
       
     }
 
@@ -25,7 +27,7 @@ class TenantController extends Controller
         $validatedData = $request->validate([
             'tenant_id' => 'required|integer',
             'tenant_name' => 'required|string',
-            'updated_at' => 'required|integer',
+            //'updated_at' => 'required|integer',
             'updated_by' => 'required|string'
         ]);
         $tenant = Tenant::create($validatedData);
@@ -58,7 +60,7 @@ class TenantController extends Controller
         $validatedData = $request->validate([
             'tenant_id' => 'required|integer',
             'tenant_name' => 'required|string',
-            'updated_at' => 'required|integer',
+            //'updated_at' => 'required|integer',
             'updated_by' => 'required|string'
         ]);
         $tenant->update($validatedData);
