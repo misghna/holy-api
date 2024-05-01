@@ -242,11 +242,7 @@ class CommonController extends Controller
         $globalSettings['page_types'] = $pageTypes;
 
         $globalSettings['content_pages'] = $pageConfig;
-        echo "here...";
-        if (Auth::check()) {
-            echo "inside";
-            $user = Auth::user();
-        }
+        
         $globalSettings['avatar'] = "DC";
         $globalSettings['user_name'] = "Dave Chapel";
         $globalSettings['authenticated'] = true;
