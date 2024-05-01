@@ -7,6 +7,7 @@ use App\Models\Language;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use stdClass;
 
 class CommonController extends Controller
@@ -242,10 +243,19 @@ class CommonController extends Controller
         $globalSettings['page_types'] = $pageTypes;
 
         $globalSettings['content_pages'] = $pageConfig;
-        
-        $globalSettings['avatar'] = "DC";
-        $globalSettings['user_name'] = "Dave Chapel";
-        $globalSettings['authenticated'] = true;
+
+        $globalSettings['avatar'] = "G";
+        $globalSettings['user_name'] = "Guest";
+        $globalSettings['authenticated'] = false;
+        // echo $token = $request->bearerToken();
+        if(auth('sanctum')->user()){
+            $username = auth('sanctum')->user()->name;
+            $parts = explode(" ", $username);
+            $avtar = substr($parts[0], 0, 1).substr($parts[1], 0, 1);
+            $globalSettings['avatar'] = $avtar;
+            $globalSettings['user_name'] = $username;
+            $globalSettings['authenticated'] = true;
+        }
         $globalSettings['product_relase_no'] = "1.0.2";
         $globalSettings['default_theme_color'] = "black";
 
