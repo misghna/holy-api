@@ -20,7 +20,9 @@ class PageConfig extends Model
         'header_img',
         'header_text',
         'updated_by',
-        'tenant_id'
+        'tenant_id',
+        'language',
+        'seq_no'
     ];
 
 }

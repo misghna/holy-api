@@ -24,7 +24,9 @@ class PageConfigController extends Controller
             'parent' => 'required|integer',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-            'tenant_id' => 'required|integer'
+            'tenant_id' => 'required|integer',
+            'seq_no' => 'required|integer',
+            'language' => 'required|string'
         ];
         
         $data = json_decode($request->getContent(), true);
@@ -60,7 +62,9 @@ class PageConfigController extends Controller
             'parent' => 'required|integer',
             'header_img' => 'required|string',
             'header_text' => 'required|string',
-            'tenant_id' => 'required|integer'
+            'tenant_id' => 'required|integer',
+            'seq_no' => 'required|integer',
+            'language' => 'required|string'
         ];
 
         $data = json_decode($request->getContent(), true);
