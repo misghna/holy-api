@@ -223,8 +223,15 @@ class CommonController extends Controller
         $globalSettings['menu'] = $this->getMenus($pageConfig);
 
         //Langs puller
-        $lang_config = Language::select("lang_id AS lang_id", "lang_name AS name")->get()->toArray();
-        $globalSettings['langs'] = $lang_config;
+        $langConfigData = Language::select("lang_id", "lang_name")->get()->toArray();
+        $langConfig = [];
+        foreach ($langConfigData as $key => $item) {
+            // print_r($item);
+            $arrray["id"] = $item["lang_id"];
+            $arrray["lang_name"] = $item["lang_name"];
+            $langConfig[] = $arrray;
+        }
+        $globalSettings['langs'] = $langConfig;
 
         $themeColors = [];
         $themeColors[] = ["label" => "black", "hexCode" => "#000000"];
@@ -261,7 +268,7 @@ class CommonController extends Controller
 
         $globalSettings['content_pages'] = $pageConfig;
 
-        $globalSettings['avatar'] = "G";
+        $globalSettings['avatar'] = "GU";
         $globalSettings['user_name'] = "Guest";
         $globalSettings['authenticated'] = false;
         // echo $token = $request->bearerToken();
