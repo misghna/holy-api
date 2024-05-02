@@ -228,7 +228,7 @@ class CommonController extends Controller
         foreach ($langConfigData as $key => $item) {
             // print_r($item);
             $arrray["id"] = $item["lang_id"];
-            $arrray["lang_name"] = $item["lang_name"];
+            $arrray["name"] = $item["lang_name"];
             $langConfig[] = $arrray;
         }
         $globalSettings['langs'] = $langConfig;
