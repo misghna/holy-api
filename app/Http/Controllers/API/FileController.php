@@ -15,11 +15,14 @@ class FileController extends Controller
     public function getOne(Request $request)
     {
         $fileId = $request->input('file_id');
+        $isThumbnail = $request->input('thumbnail');
+        $fileDir = storage_path() . "/uploaded/";
+        $path = $isThumbnail ? $fileDir . "thumbnails/" : $fileDir ;
         $tenantId = $request->header('tenant_id',0); 
         $file = File::where([["tenant_id", $tenantId],["file_id", $fileId]])
             ->first();
         if ($file)
-            return response()->download(env("FILE_UPLOAD_PATH") . "/" . $file->file_name, $file->file_name);
+            return response()->download(path . $file->file_name, $file->file_name);
         else
             return abort(404,"file(s) not found"); // return 404
     }
@@ -58,15 +61,15 @@ class FileController extends Controller
                 $fileId = $uuid . '_' . $index . '.' . $fileType;   
                 
                 //save thumbnail                
-                Log::info("path : " . $file->path()); 
+                Log::info("path : " . storage_path()); 
                 $img = Image::make($file->getRealPath());
                 $img->resize(150, 150, function ($const) {
                     $const->aspectRatio();
-                })->save(env("FILE_UPLOAD_PATH") . '/thumbnails/' . $fileId);
+                })->save(storage_path() . '/uploaded/thumbnails/' . $fileId);
                 // // end of TN
 
                 $fileName = $file->getClientOriginalName();
-                $file->move(env("FILE_UPLOAD_PATH"), $fileId);
+                $file->move(storage_path() . '/uploaded/', $fileId);
 
                 $onefile['group_id'] = $uuid;
                 $onefile['file_id'] = $fileId;
