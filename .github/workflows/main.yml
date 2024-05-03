@@ -21,7 +21,6 @@ jobs:
           **/.git*
           **/.git*/**
           **/public_html/**
-          **/vendor/**
           **/storage/**
           **/.env*
 
