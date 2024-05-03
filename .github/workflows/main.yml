@@ -8,7 +8,7 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     - name: Composer install
-      run: composer update
+      run: composer require intervention/image:^2
     - name: 📂 Private Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
