@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\API\File;
+use Intervention\Image\ImageManagerStatic as Image;
 use Log;
 
 class FileController extends Controller
@@ -59,9 +60,9 @@ class FileController extends Controller
                 //save thumbnail                
                 Log::info("path : " . $file->path()); 
                 $img = Image::make($file->getRealPath());
-                $img->resize(110, 110, function ($const) {
+                $img->resize(150, 150, function ($const) {
                     $const->aspectRatio();
-                })->save(env("FILE_UPLOAD_PATH") . '/thumbnails/' . fileId);
+                })->save(env("FILE_UPLOAD_PATH") . '/thumbnails/' . $fileId);
                 // // end of TN
 
                 $fileName = $file->getClientOriginalName();
