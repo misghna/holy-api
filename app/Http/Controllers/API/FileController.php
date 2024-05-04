@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use App\Models\API\File;
 use Intervention\Image\ImageManagerStatic as Image;
 use Log;
@@ -14,16 +15,27 @@ class FileController extends Controller
     
     public function getOne(Request $request)
     {
-        $fileId = $request->input('file_id');
+        $Id = $request->input('id');
         $isThumbnail = $request->input('thumbnail');
         $fileDir = storage_path() . "/uploaded/";
         $path = $isThumbnail ? $fileDir . "thumbnails/" : $fileDir ;
         $tenantId = $request->header('tenant_id',0); 
-        $file = File::where([["tenant_id", $tenantId],["file_id", $fileId]])
+
+        if(is_null($Id) || is_null($tenantId)){
+          //  return abort(400,"Missing Id or tenantId!"); 
+            return response()->json(['message' => 'Missing Id or tenantId!'], 400);
+        } 
+
+        $file = File::where([["tenant_id", $tenantId],["id", $Id]])
             ->first();
-        if ($file)
-            return response()->download(path . $file->file_name, $file->file_name);
-        else
+        
+        if ($file){
+            $filePath = $path . $file->file_id;
+            if(file_exists($filePath))
+                return response()->download($path . $file->file_id, $file->file_name);
+            else
+                return abort(404,"file not found"); // return 404      
+        }else
             return abort(404,"file(s) not found"); // return 404
     }
 
@@ -47,7 +59,7 @@ class FileController extends Controller
         $uuid = (string) Str::uuid();
         $files = [];
         $tenantId = $request->header('tenant_id',0); 
-        $images = array("pnp", "jpg", "jpeg", "svg","gif");
+        $images = array("png", "jpg", "jpeg", "svg","gif");
         
         if ($request->file('files')) {
 
