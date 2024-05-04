@@ -9,8 +9,10 @@ class File extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
-        'group_id','file_id','file_name'
+        'group_id','file_id','file_type','file_name','tenant_id','created_at','created_by'
     ];
 
     /**

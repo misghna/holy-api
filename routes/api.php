@@ -28,6 +28,7 @@ Route::post('refresh-token', [UserController::class, 'refreshToken']);
 Route::get('contents',[ContentController::class,'all']);
 Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);
+Route::get('global_setting1',[CommonController::class,'globalSettings1']);
 Route::resource('languages', LanguageController::class);
 Route::resource('tenants', TenantController::class);
 
@@ -35,7 +36,8 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
     Route::get('user',[UserController::class,'userDetails']);
     Route::get('logout',[UserController::class,'logout']);
     Route::controller(FileController::class)->group(function(){
-        Route::get('file', 'index');
+        Route::get('file', 'getOne');
+        Route::get('file_list', 'getList');
         Route::post('file', 'store');
         Route::delete('file', 'destroy');
     });

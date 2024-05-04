@@ -41,7 +41,7 @@ class PageConfigController extends Controller
         }
 
         $data['updated_by'] = Auth::user()->id;     
-        Log::info($data); 
+       
         $pageConfig = PageConfig::create($data);
 
         return response()->json([
