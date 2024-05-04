@@ -10,6 +10,7 @@ use App\Http\Controllers\API\PageConfigController;
 use App\Http\Controllers\API\ContentConfigController;
 use App\Http\Controllers\CommonController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\TenantController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,7 @@ Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);
 Route::get('global_setting1',[CommonController::class,'globalSettings1']);
 Route::resource('languages', LanguageController::class);
+Route::resource('tenants', TenantController::class);
 
 Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], function() {
     Route::get('user',[UserController::class,'userDetails']);
