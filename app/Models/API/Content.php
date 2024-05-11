@@ -21,7 +21,8 @@ class Content extends Model
         'is_original',
         'auto_translate',
         'is_draft',
-        'updated_by'
+        'updated_by',
+        'tenant_id'
     ];
 
     public function media_link()

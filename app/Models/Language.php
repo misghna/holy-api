@@ -10,6 +10,7 @@ class Language extends Model
     use HasFactory;
     protected $fillable = [
         'lang_id',
-        'lang_name'
+        'lang_name',
+        'tenant_id'
     ];  
 }

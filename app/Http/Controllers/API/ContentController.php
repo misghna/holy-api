@@ -11,6 +11,7 @@ use App\Models\API\File;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Twilio\Rest\Client;
 
 class ContentController extends Controller
 {
@@ -87,19 +88,21 @@ class ContentController extends Controller
         $request->validate([
             'content_category' => 'required|string',
             'lang' => 'required|string',
-            'start' => 'required|integer'
+            'start' => 'nullable|integer'
         ]);
         $content_category = $request->input("content_category");
-        $lang = $request->input('lang');
+        $lang = $request->input('lang','english');
+        $tenantId = $request->header('tenant_id',0); 
         $start = $request->input('start', 0); // Default to 0 if not provided
         $limit = $request->input('limit', 10); // Default to 10 if not provided
 
         $content = Content::with('media_link')->where("lang", $lang)
             ->select('content.id', 'content.lang', 'content.type','content.title','content.description','content.background_image','content.content_text','content.content_category',DB::raw('UNIX_TIMESTAMP(created_at)*1000 AS release_date_time'))
-            ->where("content_category", $content_category)
+            ->where([["content_category", $content_category],['lang',$lang],['tenant_id',$tenantId]])
             ->offset($start)
             ->limit($limit)
             ->get();
+
 
         return $content;
     }
