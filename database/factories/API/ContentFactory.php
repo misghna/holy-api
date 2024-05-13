@@ -3,6 +3,7 @@
 namespace Database\Factories\API;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\User;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\API\Content>
@@ -32,7 +33,8 @@ class ContentFactory extends Factory
             "auto_translate" => true,
             'created_at' => now(),
             'updated_at' => now(),
-            'is_draft' => true
+            'is_draft' => true,
+            'updated_by'=> User::inRandomOrder()->first()
         ];
     }
 }
