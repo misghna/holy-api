@@ -30,7 +30,7 @@ Route::get('content',[ContentController::class,'one']);
 Route::get('global_setting',[CommonController::class,'globalSettings']);
 Route::get('global_setting1',[CommonController::class,'globalSettings1']);
 //Route::resource('languages', LanguageController::class);
-Route::resource('tenants', TenantController::class);
+//Route::resource('tenants', TenantController::class);
 
 
 Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], function() {
@@ -48,6 +48,14 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
         Route::put('documents', 'update');
         Route::delete('documents', 'destroy');
     });
+
+    Route::controller(TenantController::class)->group(function(){
+        Route::get('tenants', 'index');
+        Route::post('tenants', 'store');
+        Route::put('tenants', 'update');
+        Route::delete('tenants', 'destroy');
+    });
+
     Route::controller(LanguageController::class)->group(function(){
         Route::get('languages', 'index');
         Route::post('languages', 'store');
@@ -56,7 +64,7 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
         Route::get('dictionaries', 'getDict');
         Route::get('dictionary', 'geOneDict');
         Route::put('dictionary', 'updateDict');
-        // Route::delete('documents', 'destroy');
+
     });
     Route::controller(PageConfigController::class)->group(function(){
         Route::get('page_configs', 'all');

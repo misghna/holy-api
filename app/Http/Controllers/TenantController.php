@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class TenantController extends Controller
 {
@@ -25,11 +26,12 @@ class TenantController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'tenant_id' => 'required|integer',
-            'tenant_name' => 'required|string',
-            //'updated_at' => 'required|integer',
-            'updated_by' => 'required|string'
+            'tenant_name' => 'required|string'
         ]);
+
+        $validatedData['tenant_id']=$request->header('tenant_id',0); 
+        $validatedData['updated_by'] = Auth::user()->id;  
+
         $tenant = Tenant::create($validatedData);
         return response()->json($tenant, 201);
     }
@@ -50,19 +52,23 @@ class TenantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request)
     {
-        $tenant = Tenant::find($id);
+
+        $validatedData = $request->validate([
+            'id' => 'required|integer',
+            'tenant_name' => 'required|string',
+        ]);
+
+        $tenant = Tenant::find($validatedData['id']);
         if(!$tenant)
         {
             return response()->json(['error' => 'Tenant not found'], 404);
         }
-        $validatedData = $request->validate([
-            'tenant_id' => 'required|integer',
-            'tenant_name' => 'required|string',
-            //'updated_at' => 'required|integer',
-            'updated_by' => 'required|string'
-        ]);
+
+        $validatedData['tenant_id']=$tenant['tenant_id']; 
+        $validatedData['updated_by'] = Auth::user()->id;  
+
         $tenant->update($validatedData);
         return response()->json($tenant);
     }

@@ -6,6 +6,7 @@ use App\Models\Language;
 use App\Models\API\Dictionary;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Validator;
 use Log;
 
 class LanguageController extends Controller
@@ -85,14 +86,19 @@ class LanguageController extends Controller
        return response()->json($rows);
     }
 
+
     public function updateDict(Request $request)
     {
-
+                
+        Log::info("hello");
         $tenantId = $request->header('tenant_id',0); 
-        $validatedData = $request->validate([
-            'key' => 'required|string'
-        ]);
-        $key = $validatedData['key'];
+        $valRules = ['key' => 'required|string'];
+        $validatedData = json_decode($request->getContent(), true);
+        $validator = Validator::make($validatedData, $valRules);
+
+        $key = $validatedData['Key'];
+
+        Log::info("hello2");
 
         $dictionary = Dictionary::select('key','language','value')
         ->where([['tenant_id',$tenantId],['key',$key]])->get();
@@ -101,6 +107,8 @@ class LanguageController extends Controller
              $lang = $row['language'];
              $langDict[$lang] = $row;
          }
+
+         Log::info("hello3");
 
         $languages = Language::select('lang_id', 'lang_name')->get();
         foreach($languages as $lang){
@@ -167,7 +175,7 @@ class LanguageController extends Controller
             'lang_id' => 'required|string',
             'lang_name' => 'required|string',
         ]);
-
+        
         $tenantId = $request->header('tenant_id',0); 
         $validatedData['tenant_id']=$tenantId;
 
