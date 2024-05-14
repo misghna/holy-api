@@ -234,11 +234,12 @@ class CommonController extends Controller
         $globalSettings['langs'] = $langConfig;
 
         $themeColors = [];
-        $themeColors[] = ["label" => "black", "hexCode" => "#000000"];
-        $themeColors[] = ["label" => "Gray", "hexCode" => "#808080"];
-        $themeColors[] = ["label" => "purple", "hexCode" => "#800080"];
+        $themeColors[] = ["label" => "Blue", "hexCode" => "#5d5e5e"];
+        $themeColors[] = ["label" => "Dark_Gray", "hexCode" => "#5d5e5e"];
+        $themeColors[] = ["label" => "Green", "hexCode" => "#2ec221"];
         $globalSettings['theme_colors'] = $themeColors;
 
+        # this needs to be pulled from dictionary
         $labels = [];
         $labels["tenant"] = "Tenant";
         $labels["document"] = "Documents";
@@ -256,6 +257,7 @@ class CommonController extends Controller
         $labels["action_menu_save"] = "Save";
         $globalSettings['labels'] = $labels;
 
+        # this needs to be pulled from Tenant Table
         $tenants = [];
         $tenants[] = ["id" => "1801", "name" => "Enda Slasie"];
         $tenants[] = ["id" => "1802", "name" => "Enda Gabr"];
