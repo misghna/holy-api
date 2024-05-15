@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use stdClass;
+use File;
 
 class CommonController extends Controller
 {
@@ -217,10 +218,12 @@ class CommonController extends Controller
 
     public function globalSettings(Request $request): JsonResponse
     {
+
         $globalSettings = [];
 
         $pageConfig = $this->getPageConfig();
-        $globalSettings['menu'] = $this->getMenus($pageConfig);
+        $globalSettings['menu'] = $this->getMenus($pageConfig); 
+        // if the secured rows don't exist push them to db (TBD)
 
         //Langs puller
         $langConfigData = Language::select("lang_id", "lang_name")->get()->toArray();
@@ -239,7 +242,7 @@ class CommonController extends Controller
         $themeColors[] = ["label" => "Green", "hexCode" => "#2ec221"];
         $globalSettings['theme_colors'] = $themeColors;
 
-        # this needs to be pulled from dictionary
+        # this needs to be pulled from dictionary (TBD)
         $labels = [];
         $labels["tenant"] = "Tenant";
         $labels["document"] = "Documents";
@@ -257,15 +260,15 @@ class CommonController extends Controller
         $labels["action_menu_save"] = "Save";
         $globalSettings['labels'] = $labels;
 
-        # this needs to be pulled from Tenant Table
-        $tenants = [];
+        # this needs to be pulled from Tenant Table (TBD)
+        $tenants = []; 
         $tenants[] = ["id" => "1801", "name" => "Enda Slasie"];
         $tenants[] = ["id" => "1802", "name" => "Enda Gabr"];
         $globalSettings['tenants'] = $tenants;
 
         $pageTypes = [];
-        $pageTypes[] = ["key" => "private", "value" => "Private"];
-        $pageTypes[] = ["key" => "public", "value" => "Public"];
+        $pageTypes[] = ["key" => "secure", "value" => "Secure"];  // these will come from 
+        $pageTypes[] = ["key" => "public", "value" => "Public"];   // all pages coming from page_config
         $globalSettings['page_types'] = $pageTypes;
 
         $globalSettings['content_pages'] = $pageConfig;
@@ -282,9 +285,8 @@ class CommonController extends Controller
             $globalSettings['user_name'] = $username;
             $globalSettings['authenticated'] = true;
         }
-        $globalSettings['product_relase_no'] = "1.0.2";
-        $globalSettings['default_theme_color'] = "black";
-
+        $globalSettings['product_relase_date'] = File::get(base_path() . "/published.txt");
+        $globalSettings['default_theme_color'] = "black"; //
 
         // Encode:
         $json = json_encode($globalSettings);
