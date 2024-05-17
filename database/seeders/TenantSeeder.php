@@ -16,10 +16,19 @@ class TenantSeeder extends Seeder
         Tenant::truncate();
 
        $tenants = [
-            ['tenant_id' => 123, 'tenant_name' => 'English', 'updated_by' => 'S'],
-            ['tenant_id' => 123, 'tenant_name' => 'Tigrigna', 'updated_by' => 'S'],
-            ['tenant_id' => 123, 'tenant_name' => 'Arabic', 'updated_by' => 'S'],
-            ['tenant_id' => 123, 'tenant_name' => 'Spanish', 'updated_by' => 'S'],
+           [ 
+        'tenant_name' => 'Enda Slasie', 
+        'updated_by' => 1,
+        'created_at' => now(),
+        'updated_at' => now()
+    ],
+    [ 
+        'tenant_name' => 'Enda Gabr', 
+        'updated_by' => 1,
+        'created_at' => now(),
+        'updated_at' => now()
+    ],
+           
             //Add more tenants as needed
         ];
         Tenant::insert($tenants);
