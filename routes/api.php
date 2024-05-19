@@ -78,6 +78,14 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
         Route::put('content', 'update');
         Route::delete('content', 'destroy');
     });
+
+    Route::controller(UserController::class)->group(function(){
+        Route::get('user_profile/edit', 'one');
+        Route::post('user_profile', 'store');
+        Route::put('user_profile', 'update');
+        Route::delete('user_profile', 'destroy');
+        Route::get('user_profile', 'all');
+    });
 });
 
 // Clear application cache:
