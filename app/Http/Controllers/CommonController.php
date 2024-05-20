@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\API\PageConfig;
 use App\Models\Language;
+use App\Models\API\Dictionary;
+use App\Models\Tenant;
+use App\Models\ThemeColor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use stdClass;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use File;
 
 class CommonController extends Controller
@@ -216,112 +218,135 @@ class CommonController extends Controller
         return response()->json(json_decode($data));
     }
 
-    public function globalSettings(Request $request): JsonResponse
-    {
+  public function globalSettings(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'tenant_id' => 'required|integer',
+    ]);
 
-        $globalSettings = [];
+    if ($validator->fails()) {
+        throw new HttpResponseException(response()->json([
+            'success' => false,
+            'message' => 'Validation errors',
+            'errors' => $validator->errors()
+        ], 422));
+    }
+   
+    $tenantId = $request->input('tenant_id');
+    $language = $request->input('language', 'english'); // default to 'english'
+  
 
-        $pageConfig = $this->getPageConfig();
-        $globalSettings['menu'] = $this->getMenus($pageConfig); 
-        // if the secured rows don't exist push them to db (TBD)
+    $globalSettings = [];
 
-        //Langs puller
-        $langConfigData = Language::select("lang_id", "lang_name")->get()->toArray();
-        $langConfig = [];
-        foreach ($langConfigData as $key => $item) {
-            // print_r($item);
-            $arrray["id"] = $item["lang_id"];
-            $arrray["name"] = $item["lang_name"];
-            $langConfig[] = $arrray;
-        }
-        $globalSettings['langs'] = $langConfig;
+    // Fetch page configurations and build menu structure
+    $pageConfig = $this->getPageConfig($tenantId);
+    $globalSettings['menu'] = $this->getMenus($pageConfig);
 
-        $themeColors = [];
-        $themeColors[] = ["label" => "Blue", "hexCode" => "#5d5e5e"];
-        $themeColors[] = ["label" => "Dark_Gray", "hexCode" => "#5d5e5e"];
-        $themeColors[] = ["label" => "Green", "hexCode" => "#2ec221"];
-        $globalSettings['theme_colors'] = $themeColors;
+ 
+    $langConfigData = Language::select("lang_id", "lang_name")->get()->toArray();
+    $langConfig = [];
+    foreach ($langConfigData as $item) {
+        $langConfig[] = [
+            "id" => $item["lang_id"],
+            "name" => $item["lang_name"]
+        ];
+    }
+    $globalSettings['langs'] = $langConfig;
 
-        # this needs to be pulled from dictionary (TBD)
-        $labels = [];
-        $labels["tenant"] = "Tenant";
-        $labels["document"] = "Documents";
-        $labels["language"] = "Language";
-        $labels["settings"] = "Settings";
-        $labels["languages"] = "Languages";
-        $labels["theme_mode"] = "Theme Mode";
-        $labels["page_config"] = "Page Config";
-        $labels["theme_color"] = "Theme Color";
-        $labels["search_title"] = "Search";
-        $labels["translations"] = "Translations";
-        $labels["admin_settings"] = "Admin Settings";
-        $labels["other_settings"] = "Other Settings";
-        $labels["content_manager"] = "Contents";
-        $labels["action_menu_save"] = "Save";
-        $globalSettings['labels'] = $labels;
+  
+    $themeColors = ThemeColor::select('label', 'hexCode')->get()->toArray();
+    $globalSettings['theme_colors'] = $themeColors;
 
-        # this needs to be pulled from Tenant Table (TBD)
-        $tenants = []; 
-        $tenants[] = ["id" => "1801", "name" => "Enda Slasie"];
-        $tenants[] = ["id" => "1802", "name" => "Enda Gabr"];
-        $globalSettings['tenants'] = $tenants;
 
-        $pageTypes = [];
-        $pageTypes[] = ["key" => "secure", "value" => "Secure"];  // these will come from 
-        $pageTypes[] = ["key" => "public", "value" => "Public"];   // all pages coming from page_config
-        $globalSettings['page_types'] = $pageTypes;
+    $labels = Dictionary::where('language', $language)
+        ->where('tenant_id', $tenantId)
+        ->pluck('value', 'key')
+        ->toArray();
+  
 
-        $globalSettings['content_pages'] = $pageConfig;
-
-        $globalSettings['avatar'] = "GU";
-        $globalSettings['user_name'] = "Guest";
-        $globalSettings['authenticated'] = false;
-        // echo $token = $request->bearerToken();
-        if(auth('sanctum')->user()){
-            $username = auth('sanctum')->user()->name;
-            $parts = explode(" ", $username);
-            $avtar = substr($parts[0], 0, 1).substr($parts[1], 0, 1);
-            $globalSettings['avatar'] = $avtar;
-            $globalSettings['user_name'] = $username;
-            $globalSettings['authenticated'] = true;
-        }
-        $globalSettings['product_relase_date'] = File::get(base_path() . "/published.txt");
-        $globalSettings['default_theme_color'] = "black"; //
-
-        // Encode:
-        $json = json_encode($globalSettings);
-        return response()->json(json_decode($json));
+     // Use English labels if requested language labels are not found
+    if (empty($labels)) {
+        $labels = Dictionary::where('language', 'english')
+            ->where('tenant_id', $tenantId)
+            ->pluck('value', 'key')
+            ->toArray();
     }
 
-    private function getPageConfig(){
-        $pageConfig = PageConfig::select("id", "page_type AS type", "name", "page_url AS url", "parent")->get()->toArray();
-        return $pageConfig;
+    $globalSettings['labels'] = $labels;
+
+    
+    $tenants = Tenant::select('id', 'tenant_name as name')->get()->toArray();
+    $globalSettings['tenants'] = $tenants;
+
+    
+    $pageTypes = collect($pageConfig)
+        ->pluck('type')
+        ->unique()
+        ->map(function ($type) {
+            return ['key' => $type, 'value' => ucfirst($type)];
+        })
+        ->values()
+        ->toArray();
+    $globalSettings['page_types'] = $pageTypes;
+
+    
+    $globalSettings['content_pages'] = $pageConfig;
+
+    // User authentication details
+    $globalSettings['avatar'] = "GU";
+    $globalSettings['user_name'] = "Guest";
+    $globalSettings['authenticated'] = false;
+    if (auth('sanctum')->user()) {
+        $username = auth('sanctum')->user()->name;
+        $parts = explode(" ", $username);
+        $avatar = substr($parts[0], 0, 1) . substr($parts[1], 0, 1);
+        $globalSettings['avatar'] = $avatar;
+        $globalSettings['user_name'] = $username;
+        $globalSettings['authenticated'] = true;
     }
 
-    private function getMenus($pageConfig)
-    {
-        //Menus puller
-        $itemsByReference = array();
+    
+    $globalSettings['product_relase_date'] = File::get(base_path() . "/published.txt");
+    $globalSettings['default_theme_color'] = "black";
 
-        // Build array of item references:
-        foreach ($pageConfig as $key => &$item) {
-            $itemsByReference[$item['id']] = &$item;
-            // Children array:
-            $itemsByReference[$item['id']]['sub_menu'] = array();
-            // Empty data class (so that json_encode adds "data: {}" ) 
-            // $itemsByReference[$item['id']]['data'] = new stdClass();
-        }
-        // Set items as children of the relevant parent item.
-        foreach ($pageConfig as $key => &$item)
-            if ($item['parent'] && $item['parent'] != 0 && isset($itemsByReference[$item['parent']]))
-                $itemsByReference[$item['parent']]['sub_menu'][] = &$item;
+   
+    $json = json_encode($globalSettings);
+    return response()->json(json_decode($json));
+}
 
+private function getPageConfig($tenantId)
+{
+    return PageConfig::where('tenant_id', $tenantId)
+        ->select("id", "page_type AS type", "name", "page_url AS url", "parent")
+        ->get()
+        ->toArray();
+}
 
-        // Remove items that were added to parents elsewhere:
-        foreach ($pageConfig as $key => &$item) {
-            if ($item['parent'] && isset($itemsByReference[$item['parent']]))
-                unset($pageConfig[$key]);
-        }
-        return array_values($pageConfig);
+private function getMenus($pageConfig)
+{
+    $itemsByReference = [];
+
+    foreach ($pageConfig as &$item) {
+        $itemsByReference[$item['id']] = &$item;
+        $itemsByReference[$item['id']]['sub_menu'] = [];
     }
+
+    foreach ($pageConfig as &$item) {
+        if ($item['parent'] && $item['parent'] != 0 && isset($itemsByReference[$item['parent']])) {
+            $itemsByReference[$item['parent']]['sub_menu'][] = &$item;
+        }
+    }
+
+    foreach ($pageConfig as $key => &$item) {
+        if ($item['parent'] && isset($itemsByReference[$item['parent']])) {
+            unset($pageConfig[$key]);
+        }
+    }
+
+    return array_values($pageConfig);
+}
+
+
+
+ 
 }
