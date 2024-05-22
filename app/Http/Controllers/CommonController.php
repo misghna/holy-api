@@ -10,6 +10,7 @@ use App\Models\ThemeColor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use File;
 
@@ -242,38 +243,28 @@ class CommonController extends Controller
     $pageConfig = $this->getPageConfig($tenantId);
     $globalSettings['menu'] = $this->getMenus($pageConfig);
 
- 
-    $langConfigData = Language::select("lang_id", "lang_name")->get()->toArray();
-    $langConfig = [];
-    foreach ($langConfigData as $item) {
-        $langConfig[] = [
-            "id" => $item["lang_id"],
-            "name" => $item["lang_name"]
-        ];
-    }
+
+    $langConfig = Language::select('lang_id as value', 'lang_name as name')->get()->toArray();
     $globalSettings['langs'] = $langConfig;
 
   
     $themeColors = ThemeColor::select('label', 'hexCode')->get()->toArray();
     $globalSettings['theme_colors'] = $themeColors;
-
-
-    $labels = Dictionary::where('language', $language)
-        ->where('tenant_id', $tenantId)
-        ->pluck('value', 'key')
-        ->toArray();
-  
-
-     // Use English labels if requested language labels are not found
-    if (empty($labels)) {
-        $labels = Dictionary::where('language', 'english')
-            ->where('tenant_id', $tenantId)
-            ->pluck('value', 'key')
-            ->toArray();
-    }
-
+ 
+    // Fetch labels with fallback to English
+    $labels = DB::select("
+        SELECT 
+            en.key, 
+            IFNULL(x.value, en.value) AS value 
+        FROM 
+            (SELECT `key`, `value` FROM `dictionary` WHERE `language` = 'english' AND `tenant_id` = ?) en 
+        LEFT JOIN 
+            (SELECT `key`, `value` FROM `dictionary` WHERE `language` = ? AND `tenant_id` = ?) x 
+        ON 
+            en.key = x.key
+    ", [$tenantId, $language, $tenantId]);
+    $labels = collect($labels)->pluck('value', 'key')->toArray();
     $globalSettings['labels'] = $labels;
-
     
     $tenants = Tenant::select('id', 'tenant_name as name')->get()->toArray();
     $globalSettings['tenants'] = $tenants;
