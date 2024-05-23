@@ -244,7 +244,12 @@ class CommonController extends Controller
     $globalSettings['menu'] = $this->getMenus($pageConfig);
 
 
-    $langConfig = Language::select('lang_id as value', 'lang_name as name')->get()->toArray();
+    $langConfig = Language::select('lang_id', 'lang_name as name')->get()->map(function($lang) {
+        return [
+            'id' => $lang->lang_id,
+            'name' => $lang->name,
+        ];
+    })->toArray();
     $globalSettings['langs'] = $langConfig;
 
   
