@@ -221,9 +221,9 @@ class CommonController extends Controller
 
   public function globalSettings(Request $request): JsonResponse
 {
-    $validator = Validator::make($request->all(), [
-        'tenant_id' => 'required|integer',
-    ]);
+    // $validator = Validator::make($request->all(), [
+    //     'tenant_id' => 'required|integer',
+    // ]);
 
     if ($validator->fails()) {
         throw new HttpResponseException(response()->json([
@@ -233,7 +233,7 @@ class CommonController extends Controller
         ], 422));
     }
    
-    $tenantId = $request->input('tenant_id');
+    $tenantId = $request->input('tenant_id',0);
     $language = $request->input('language', 'english'); // default to 'english'
   
 
