@@ -225,13 +225,13 @@ class CommonController extends Controller
     //     'tenant_id' => 'required|integer',
     // ]);
 
-    if ($validator->fails()) {
-        throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Validation errors',
-            'errors' => $validator->errors()
-        ], 422));
-    }
+    // if ($validator->fails()) {
+    //     throw new HttpResponseException(response()->json([
+    //         'success' => false,
+    //         'message' => 'Validation errors',
+    //         'errors' => $validator->errors()
+    //     ], 422));
+    // }
    
     $tenantId = $request->input('tenant_id',0);
     $language = $request->input('language', 'english'); // default to 'english'
