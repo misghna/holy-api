@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use File;
+use Log;
 
 class CommonController extends Controller
 {
@@ -221,24 +222,13 @@ class CommonController extends Controller
 
   public function globalSettings(Request $request): JsonResponse
 {
-    // $validator = Validator::make($request->all(), [
-    //     'tenant_id' => 'required|integer',
-    // ]);
-
-    // if ($validator->fails()) {
-    //     throw new HttpResponseException(response()->json([
-    //         'success' => false,
-    //         'message' => 'Validation errors',
-    //         'errors' => $validator->errors()
-    //     ], 422));
-    // }
    
-    $tenantId = $request->input('tenant_id',0);
-    $language = $request->input('language', 'english'); // default to 'english'
+    $tenantId = $request->header('tenant_id',0);
+    $language = $request->header('language', 'english'); // default to 'english'
   
 
     $globalSettings = [];
-
+    Log::info("tenantId ". $tenantId); 
     // Fetch page configurations and build menu structure
     $pageConfig = $this->getPageConfig($tenantId);
     $globalSettings['menu'] = $this->getMenus($pageConfig);
