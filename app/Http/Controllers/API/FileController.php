@@ -59,7 +59,7 @@ class FileController extends Controller
         $uuid = (string) Str::uuid();
         $files = [];
         $tenantId = $request->header('tenant_id',0); 
-        $images = array("png", "jpg", "jpeg", "svg","gif");
+        $images = array("png", "jpg", "jpeg", "svg","gif","webp");
         
         if ($request->file('files')) {
 
