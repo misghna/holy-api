@@ -12,6 +12,8 @@ class FileMapper extends Model
 {
     use HasFactory;
 
+    protected $table = 'file_mapper';
+
     protected $fillable = [
         'ref_id',
         'ref_type',
