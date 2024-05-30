@@ -163,8 +163,8 @@ class PageConfigController extends Controller
 }
 
 
-  public function all(Request $request)
-{
+  public function all(Request $request){
+    
     $tenantId = $request->header('tenant_id');
 
     // Validate the tenant_id
@@ -183,28 +183,23 @@ class PageConfigController extends Controller
     $start = $request->input('start', 0);
     $limit = $request->input('limit', 10); 
 
-    $pageConfigs = DB::table('page_config')
-        ->leftJoin('file_mapper', function ($join) {
-            $join->on('page_config.id', '=', 'file_mapper.ref_id')
-                ->where('file_mapper.ref_type', '=', 'page_config');
-        })
-        ->where('page_config.tenant_id', $tenantId)
-        ->offset($start)
-        ->limit($limit)
-        ->select('page_config.*', DB::raw('COALESCE(GROUP_CONCAT(file_mapper.file_id), "") as header_img'))
-        ->groupBy('page_config.id')
-        ->get()
-        ->map(function ($item) {
-            $item->header_img = empty($item->header_img) ? [] : explode(',', $item->header_img);
-            return $item;
-        });
+    $pageConfigs = DB::select("SELECT pc.*, concat('[',COALESCE(GROUP_CONCAT(fm.file_id), ''),']') as header_img 
+        FROM page_config pc
+        left join file_mapper fm 
+        ON fm.ref_id=pc.id and fm.ref_type='page_config'
+        where pc.tenant_id=" . $tenantId . "
+        Group by pc.id,name,page_type,description,parent,header_text,page_url,tenant_id,created_at,updated_at,seq_no,language,updated_by
+        LIMIT " . $limit . " OFFSET ". $start);
 
-    if ($pageConfigs->isEmpty()) {
+    if ($pageConfigs==null) {
         return response()->json([
             'success' => false,
             'message' => 'No records found for the provided tenant ID',
         ], 404);
     }
+
+    foreach($pageConfigs as $r)
+        $r->header_img=json_decode($r->header_img);
 
     return response()->json($pageConfigs);
 }
