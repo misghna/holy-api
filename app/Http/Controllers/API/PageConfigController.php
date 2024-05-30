@@ -9,13 +9,14 @@ use Illuminate\Http\JsonResponse;
 use App\Models\API\PageConfig;
 use App\Models\FileMapper;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Validator;
 use Log;
 
 class PageConfigController extends Controller
 {
 
-   public function store(Request $request): JsonResponse
+  public function store(Request $request): JsonResponse
 {
     $tenantId = $request->header('tenant_id');
     $valRules = [
@@ -54,17 +55,21 @@ class PageConfigController extends Controller
 
     $pageConfig = PageConfig::create($data);
 
-    // Store header_img in FileMapper
-    foreach ($headerImg as $fileId) {
-        FileMapper::create([
+    
+    $headerImgData = array_map(function ($fileId) use ($pageConfig, $data) {
+        return [
             'ref_id' => $pageConfig->id,
             'ref_type' => 'page_config',
             'file_id' => $fileId,
             'updated_by' => $data['updated_by'],
-        ]);
-    }
+            'created_at' => $data['created_at'],
+            'updated_at' => $data['updated_at']
+        ];
+    }, $headerImg);
 
-    
+    // Bulk insert header_img data into FileMapper
+    FileMapper::insert($headerImgData);
+
     $pageConfigArray = $pageConfig->toArray();
     $pageConfigArray['header_img'] = $headerImg;
 
@@ -76,8 +81,11 @@ class PageConfigController extends Controller
 
 
 
+
    public function update(Request $request): JsonResponse
 {
+    $tenantId = $request->header('tenant_id');
+
     $valRules = [
         'id' => 'required|integer',
         'page_type' => 'required|string',
@@ -87,12 +95,13 @@ class PageConfigController extends Controller
         'header_img' => 'required|array',
         'header_text' => 'required|string',
         'page_url' => 'required|string',
-        'tenant_id' => 'required|integer',
+        'tenant_id' => 'required|integer|exists:tenants,id',
         'seq_no' => 'required|integer',
         'language' => 'required|string'
     ];
 
     $data = $request->all();
+    $data['tenant_id'] = $tenantId;
     $data['updated_at'] = gmdate('Y-m-d H:i:s');
 
     $validator = Validator::make($data, $valRules);
@@ -154,9 +163,8 @@ class PageConfigController extends Controller
 }
 
 
-    public function all(Request $request)
+  public function all(Request $request)
 {
-    
     $tenantId = $request->header('tenant_id');
 
     // Validate the tenant_id
@@ -175,10 +183,21 @@ class PageConfigController extends Controller
     $start = $request->input('start', 0);
     $limit = $request->input('limit', 10); 
 
-    $pageConfigs = PageConfig::where('tenant_id', $tenantId)
+    $pageConfigs = DB::table('page_config')
+        ->leftJoin('file_mapper', function ($join) {
+            $join->on('page_config.id', '=', 'file_mapper.ref_id')
+                ->where('file_mapper.ref_type', '=', 'page_config');
+        })
+        ->where('page_config.tenant_id', $tenantId)
         ->offset($start)
         ->limit($limit)
-        ->get();
+        ->select('page_config.*', DB::raw('COALESCE(GROUP_CONCAT(file_mapper.file_id), "") as header_img'))
+        ->groupBy('page_config.id')
+        ->get()
+        ->map(function ($item) {
+            $item->header_img = empty($item->header_img) ? [] : explode(',', $item->header_img);
+            return $item;
+        });
 
     if ($pageConfigs->isEmpty()) {
         return response()->json([
@@ -187,16 +206,10 @@ class PageConfigController extends Controller
         ], 404);
     }
 
-    $pageConfigs->each(function ($pageConfig) {
-        $headerImages = FileMapper::where('ref_id', $pageConfig->id)
-            ->where('ref_type', 'page_config')
-            ->pluck('file_id')
-            ->toArray();
-        $pageConfig->header_img = $headerImages;
-    });
-
     return response()->json($pageConfigs);
 }
+
+
 
     public function one(Request $request)
 {
