@@ -183,12 +183,20 @@ class PageConfigController extends Controller
     $start = $request->input('start', 0);
     $limit = $request->input('limit', 10); 
 
-    
 
-    $pageConfigs = DB::select("
-        SELECT pc.*, 
-           concat('[',COALESCE(GROUP_CONCAT(fm.file_id), ''),']') as header_img, 
-           COUNT(*) OVER() as totalRows 
+    $totalRows = DB::table('page_config')
+        ->where('tenant_id', $tenantId)
+        ->count();
+
+    // Check if start exceeds total rows
+    if ($start >= $totalRows) {
+        return response()->json([
+            'data' => [],
+            'totalRows' => $totalRows
+        ]);
+    }
+
+    $pageConfigs = DB::select("SELECT pc.*, concat('[',COALESCE(GROUP_CONCAT(fm.file_id), ''),']') as header_img
         FROM page_config pc
         left join file_mapper fm 
         ON fm.ref_id=pc.id and fm.ref_type='page_config'
@@ -207,20 +215,12 @@ class PageConfigController extends Controller
     foreach($pageConfigs as $r)
         $r->header_img=json_decode($r->header_img);
 
-    $totalRows = $pageConfigs[0]->totalRows;
-
-    // Remove totalRows from individual records
-    foreach ($pageConfigs as $r) {
-        unset($r->totalRows);
-    }
-    
-
+   
     return response()->json([
         'data' => $pageConfigs,
         'totalRows' => $totalRows
     ]);
 }
-
 
 
     public function one(Request $request)
