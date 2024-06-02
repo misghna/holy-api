@@ -67,10 +67,10 @@ class FileController extends Controller
             $index = 1;
             foreach ($request->file('files') as $file) {
                 
-                $fileType = strtolower($file->extension());
+                $ext = $fileType = strtolower($file->extension());
                 if(in_array ($fileType,$images)) $fileType ="image";
 
-                $fileId = $uuid . '_' . $index . '.' . $fileType;   
+                $fileId = $uuid . '_' . $index . '.' . $ext;   
                 
                 //save thumbnail                
                 Log::info("path : " . storage_path()); 

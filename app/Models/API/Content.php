@@ -13,7 +13,6 @@ class Content extends Model
         'type',
         'title',
         'description',
-        'background_image',
         'content_text',
         'media_link',
         'content_category',
