@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-
+use App\Models\API\PageConfig;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -44,4 +44,35 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+     public function permissions()
+    {
+        return $this->hasMany(Permission::class);
+    }
+
+    public function readablePages()
+    {
+        return $this->belongsToMany(PageConfig::class, 'permissions')
+                    ->withPivot('access_level')
+                    ->wherePivotIn('access_level', ['READ', 'WRITE', 'ADMIN']);
+    }
+
+    public function writablePages()
+    {
+        return $this->belongsToMany(PageConfig::class, 'permissions')
+                    ->withPivot('access_level')
+                    ->wherePivotIn('access_level', ['WRITE', 'ADMIN']);
+    }
+
+    public function adminPages()
+    {
+        return $this->belongsToMany(PageConfig::class, 'permissions')
+                    ->withPivot('access_level')
+                    ->wherePivot('access_level', 'ADMIN');
+    }
+
+    public function canUpdatePermissions()
+    {
+        return $this->adminPages()->exists();
+    }
 }
