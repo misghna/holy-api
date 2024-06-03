@@ -19,6 +19,7 @@ class ContentController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $request->header('tenant_id');
         $valRules = [
             'type' => 'required|string',
             'title' => 'required|string',
@@ -31,8 +32,10 @@ class ContentController extends Controller
             'is_original' => 'required|boolean',
             'auto_translate' => 'required|boolean',
             'is_draft' => 'required|boolean',
+            'tenant_id' => 'required|integer|exists:tenants,id'
         ];
         $data = $request->all();
+        $data['tenant_id'] = $tenantId;
         $data['created_at'] = gmdate('Y-m-d H:i:s');
         $data['updated_at'] = gmdate('Y-m-d H:i:s');
         $validator = Validator::make($data, $valRules);
@@ -80,7 +83,7 @@ class ContentController extends Controller
     public function update(Request $request): JsonResponse
     {
         
-
+        $tenantId = $request->header('tenant_id');
         $valRules = [
             'id' => 'required|integer',
             'type' => 'required|string',
@@ -94,8 +97,10 @@ class ContentController extends Controller
             'is_original' => 'required|boolean',
             'auto_translate' => 'required|boolean',
             'is_draft' => 'required|boolean',
+            'tenant_id' => 'required|integer|exists:tenants,id',
         ];
         $data = $request->all();
+        $data['tenant_id'] = $tenantId;
         $data['created_at'] = gmdate('Y-m-d H:i:s');
         $data['updated_at'] = gmdate('Y-m-d H:i:s');
         $validator = Validator::make($data, $valRules);
@@ -162,14 +167,27 @@ class ContentController extends Controller
 
     public function all(Request $request)
     {
+        $tenantId = $request->header('tenant_id');
+        // Validate the tenant_id
+        $validator = Validator::make(['tenant_id' => $tenantId], [
+            'tenant_id' => 'required|integer|exists:tenants,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         $request->validate([
             'content_category' => 'required|string',
             'lang' => 'required|string',
-            'start' => 'nullable|integer'
         ]);
+        
         $content_category = $request->input("content_category");
         $lang = $request->input('lang','english');
-        $tenantId = $request->header('tenant_id',0); 
         $start = $request->input('start', 0); // Default to 0 if not provided
         $limit = $request->input('limit', 10); // Default to 10 if not provided
 
@@ -191,6 +209,21 @@ class ContentController extends Controller
 
     public function one(Request $request)
     {
+        $tenantId = $request->header('tenant_id');
+        $headerValidator = Validator::make(['tenant_id' => $tenantId], [
+            'tenant_id' => 'required|integer|exists:tenants,id',
+        ]);
+
+        if ($headerValidator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $headerValidator->errors()
+            ], 422);
+        }
+
+        $id = $request->input('id');
+        
         $request->validate([
             'id' => 'required|integer',
             'content_category' => 'required|string',
