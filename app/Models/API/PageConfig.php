@@ -7,7 +7,8 @@ namespace App\Models\API;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\FileMapper; 
+use App\Models\FileMapper;
+use App\Models\User; 
 
 class PageConfig extends Model
 {
