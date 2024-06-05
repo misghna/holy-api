@@ -12,12 +12,15 @@ return new class extends Migration
     public function up(): void
     {
        Schema::create('permissions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('page_config_id')->constrained('page_config')->onDelete('cascade');
-            $table->enum('access_level', ['READ', 'WRITE', 'ADMIN']);
-            $table->timestamps();
-        });
+        $table->id();
+        $table->unsignedBigInteger('user_id');
+        $table->unsignedBigInteger('page_config_id');
+        $table->enum('access_level', ['R', 'RW', 'N']);
+        $table->timestamps();
+
+        $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        $table->foreign('page_config_id')->references('id')->on('page_config')->onDelete('cascade');
+    });
     }
 
     /**
