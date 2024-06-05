@@ -266,7 +266,6 @@ class PageConfigController extends Controller
 }
 
 
-
    public function one(Request $request)
 {
     $tenantId = $request->header('tenant_id');
