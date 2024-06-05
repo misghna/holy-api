@@ -228,7 +228,7 @@ class CommonController extends Controller
     $globalSettings = [];
     Log::info("tenantId ". $tenantId); 
 
-    // User authentication details
+ 
     $userId = null;
     $globalSettings['avatar'] = "GU";
     $globalSettings['user_name'] = "Guest";
@@ -243,11 +243,11 @@ class CommonController extends Controller
         $userId = auth('sanctum')->user()->id;
     }
 
-    // Fetch page configurations and build menu structure
+   
     $pageConfig = $this->getPageConfig($tenantId, $userId);
     $globalSettings['menu'] = $this->getMenus($pageConfig);
 
-    // Fetch languages
+ 
     $langConfig = Language::select('lang_id', 'lang_name as name')->get()->map(function($lang) {
         return [
             'id' => $lang->lang_id,
@@ -256,7 +256,7 @@ class CommonController extends Controller
     })->toArray();
     $globalSettings['langs'] = $langConfig;
 
-    // Fetch theme colors
+
     $themeColors = ThemeColor::select('label', 'hexCode')->get()->toArray();
     $globalSettings['theme_colors'] = $themeColors;
 
@@ -275,11 +275,11 @@ class CommonController extends Controller
     $labels = collect($labels)->pluck('value', 'key')->toArray();
     $globalSettings['labels'] = $labels;
 
-    // Fetch tenants
+ 
     $tenants = Tenant::select('id', 'tenant_name as name')->get()->toArray();
     $globalSettings['tenants'] = $tenants;
 
-    // Fetch page types
+
     $pageTypes = collect($pageConfig)
         ->pluck('type')
         ->unique()
@@ -313,12 +313,11 @@ private function getPageConfig($tenantId, $userId)
         WHERE pc.tenant_id = ?
         AND (
             pc.page_type = 'public' 
-            OR p.access_level IN ('READ', 'WRITE', 'ADMIN')
+            OR p.access_level IN ('R', 'RW')
         )
     ";
 
     if (is_null($userId)) {
-        // If userId is null, modify the query to return only public pages
         $query = "
             SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent
             FROM page_config pc
@@ -328,9 +327,10 @@ private function getPageConfig($tenantId, $userId)
         $bindings = [$tenantId];
     }
 
-    $results = DB::select($query, $bindings);; 
+    $results = DB::select($query, $bindings);
     return json_decode(json_encode($results), true);
 }
+
 
 private function getMenus($pageConfig)
 {
