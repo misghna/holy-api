@@ -4,6 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Permission;
+use App\Models\API\PageConfig;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Auth;
@@ -86,24 +88,36 @@ class UserController extends Controller
         return Response(['message' => 'User logout successful.'], 200);
     }
 
+   
     public function store(Request $request): JsonResponse
     {
+        $currentUserId = Auth::id();
+
+        if (!$this->hasRWAccess($currentUserId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 403);
+        }
+
         $valRules = [
             'name' => 'required|string',
             'email' => 'required|string',
-            'phone_number' => 'required|string',
-            'access' => 'required|json'
+            'phone_number' => 'required|string'
         ];
+
         $data = $request->input();
         $data['created_at'] = gmdate('Y-m-d H:i:s');
         $data['updated_at'] = gmdate('Y-m-d H:i:s');
-        $data['access_config'] = $request->input("access");
-
 
         $validator = Validator::make($data, $valRules);
 
         if (!$validator->passes()) {
-            dd($validator->errors()->all());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()->all()
+            ], 422);
         }
 
         $user = User::create($data);
@@ -113,26 +127,36 @@ class UserController extends Controller
             'message' => 'Success, User added successfully'
         ], 200);
     }
+     public function update(Request $request): JsonResponse
+    {
+        $currentUserId = Auth::id();
 
-    public function update(Request $request): JsonResponse
-    {  
+        if (!$this->hasRWAccess($currentUserId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized to update the user.'
+            ], 403);
+        }
+
         $valRules = [
             'id' => 'required|integer',
             'name' => 'required|string',
             'email' => 'required|string',
-            'phone_number' => 'required|string',
-            'access' => 'required|json'
+            'phone_number' => 'required|string'
         ];
 
         $data = $request->input();
         $data['created_at'] = gmdate('Y-m-d H:i:s');
         $data['updated_at'] = gmdate('Y-m-d H:i:s');
-        $data['access_config'] = $request->input("access");
 
         $validator = Validator::make($data, $valRules);
 
         if (!$validator->passes()) {
-            dd($validator->errors()->all());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()->all()
+            ], 422);
         }
 
         $user = User::findOrFail($data['id']);
@@ -140,10 +164,72 @@ class UserController extends Controller
         $user->save();
 
         return response()->json([
-            'pageConfig' => $user,
+            'data' => $user,
             'message' => 'Success, User updated successfully'
         ], 200);
+    }
 
+    public function one(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+        ]);
+
+        $id = $request->input('id');
+        $user = User::where('id', $id)
+            ->select("id", "name", "email", "phone_number")
+            ->first();
+
+        if ($user) {
+            $user->access = Permission::where('user_id', $id)
+                ->get()
+                ->groupBy('page_config_id')
+                ->map(function ($item) {
+                    return $item->pluck('access_level')->first();
+                });
+
+            return response()->json($user, 200);
+        } else {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+    }
+
+     public function all(Request $request): Response
+    {
+        $users = User::select("id", "name", "email", "phone_number")->get()->toArray();
+
+        if ($users) {
+            foreach ($users as &$user) {
+                $permissions = Permission::where('user_id', $user['id'])
+                    ->get()
+                    ->mapWithKeys(function ($item) {
+                        $pageConfig = PageConfig::find($item->page_config_id);
+                        return [$pageConfig->name => $item->access_level];
+                    });
+
+                // Add permissions to the user data
+                $user = array_merge($user, $permissions->toArray());
+            }
+
+            $columns = [
+                ["value" => "id", "name" => "Id"],
+                ["value" => "name", "name" => "Name"],
+                ["value" => "email", "name" => "Email"],
+                ["value" => "phone_number", "name" => "Phone Number"]
+            ];
+
+            // Add permission columns dynamically
+            $permissionColumns = array_keys($users[0]);
+            foreach ($permissionColumns as $col) {
+                if (!in_array($col, ['id', 'name', 'email', 'phone_number'])) {
+                    $columns[] = ["value" => $col, "name" => ucwords(str_replace("_", " ", $col))];
+                }
+            }
+
+            return Response(['columns' => $columns, 'data' => $users], 200);
+        } else {
+            return Response(['message' => 'Not Found'], 200);
+        }
     }
     public function destroy(Request $request)
     {
@@ -157,32 +243,66 @@ class UserController extends Controller
         else return "User not found";
     }
 
-    public function one(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|integer',
-        ]);
-        $id = $request->input('id');
-        $user = User::where([["id", $id]])
-            ->select("id", "name", "email", "phone_number", "access_config AS access")
-            ->first();
-        // DB::raw("JSON_ARRAY(JSON_OBJECT('content_manager',content_manager,'finance',finance,'admin_settings',admin_settings)) AS access")    
-        return $user;
+     private function savePermissions($userId, $accessData)
+{
+    $pageConfigIds = [];
+    $invalidPages = [];
+
+   
+    foreach ($accessData as $access) {
+        foreach ($access as $key => $value) {
+            $pageConfigIds[$key] = $this->getPageConfigId($key);
+        }
     }
-    public function all(Request $request): Response
-    {
-        // $users = User::select("id", "name", "email", "phone_number", "content_manager", "finance", "admin_settings")
-        $users = User::select("id", "name", "email", "phone_number", DB::raw("JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(access_config,'$[*].content_manager'),'$[0]')) as content_manager"), DB::raw("JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(access_config,'$[*].finance'),'$[0]')) as finance"), DB::raw("JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(access_config,'$[*].admin_settings'),'$[0]')) as admin_settings"))
-            ->get()->toArray();
-        if ($users) {
-            $columns = [];
-            $arrayKeys = array_keys($users[0]);
-            foreach ($arrayKeys as $col) {
-                $column["value"] = $col;
-                $column["name"] = ucwords(str_replace("_", " ", $col));
-                $columns[] = $column;
-            }
-            return Response(['columns' => $columns, 'data' => $users], 200);
-        } else return Response(['message' => 'Not Found'], 200);
+
+    // Check if all page configuration IDs exist
+    foreach ($pageConfigIds as $pageConfigName => $pageConfigId) {
+        if (!$pageConfigId) {
+            $invalidPages[] = $pageConfigName;
+        }
     }
+
+    if (!empty($invalidPages)) {
+        throw new \Exception("Page configuration(s) do not exist: " . implode(', ', $invalidPages));
+    }
+
+    // Clear existing permissions for the user
+    Permission::where('user_id', $userId)->delete();
+
+    $bulkInsertData = [];
+    foreach ($accessData as $access) {
+        foreach ($access as $key => $value) {
+            $bulkInsertData[] = [
+                'user_id' => $userId,
+                'page_config_id' => $pageConfigIds[$key],
+                'access_level' => $value,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+    }
+
+    if (!empty($bulkInsertData)) {
+        Permission::insert($bulkInsertData);
+    }
+}
+
+    private function getPageConfigId($pageConfigName)
+    {
+        $pageConfig = PageConfig::where('name', $pageConfigName)->first();
+        return $pageConfig ? $pageConfig->id : null;
+    }
+
+   private function hasRWAccess($userId)
+{
+    return Permission::where('user_id', $userId)
+        ->whereHas('pageConfig', function ($query) {
+            $query->where('name', 'User Profile');
+        })
+        ->where('access_level', 'RW')
+        ->exists();
+}
+
+
+   
 }
