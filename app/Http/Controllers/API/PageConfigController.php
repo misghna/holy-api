@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\API\PageConfig;
 use App\Models\FileMapper;
-use App\Models\Permission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Validator;
@@ -17,8 +16,7 @@ use Log;
 class PageConfigController extends Controller
 {
 
-
-    public function store(Request $request): JsonResponse
+  public function store(Request $request): JsonResponse
 {
     $tenantId = $request->header('tenant_id');
     $valRules = [
@@ -55,50 +53,36 @@ class PageConfigController extends Controller
     $headerImg = $data['header_img'];
     unset($data['header_img']);
 
-    try {
-        DB::transaction(function () use ($data, $headerImg, &$pageConfig) {
-            $pageConfig = PageConfig::create($data);
+    $pageConfig = PageConfig::create($data);
 
-            $headerImgData = array_map(function ($fileId) use ($pageConfig, $data) {
-                return [
-                    'ref_id' => $pageConfig->id,
-                    'ref_type' => 'page_config',
-                    'file_id' => $fileId,
-                    'updated_by' => $data['updated_by'],
-                    'created_at' => $data['created_at'],
-                    'updated_at' => $data['updated_at']
-                ];
-            }, $headerImg);
+    
+    $headerImgData = array_map(function ($fileId) use ($pageConfig, $data) {
+        return [
+            'ref_id' => $pageConfig->id,
+            'ref_type' => 'page_config',
+            'file_id' => $fileId,
+            'updated_by' => $data['updated_by'],
+            'created_at' => $data['created_at'],
+            'updated_at' => $data['updated_at']
+        ];
+    }, $headerImg);
 
-            // Bulk insert header_img data into FileMapper
-            FileMapper::insert($headerImgData);
+    // Bulk insert header_img data into FileMapper
+    FileMapper::insert($headerImgData);
 
-            // Assign ADMIN access to the creator of the page
-            Permission::create([
-                'user_id' => $data['updated_by'],
-                'page_config_id' => $pageConfig->id,
-                'access_level' => 'ADMIN'
-            ]);
-        });
+    $pageConfigArray = $pageConfig->toArray();
+    $pageConfigArray['header_img'] = $headerImg;
 
-        $pageConfigArray = $pageConfig->toArray();
-        $pageConfigArray['header_img'] = $headerImg;
-
-        return response()->json([
-            'data' => $pageConfigArray,
-            'message' => 'Success'
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while creating the page configuration',
-            'error' => $e->getMessage()
-        ], 500);
-    }
+    return response()->json([
+        'data' => $pageConfigArray,
+        'message' => 'Success'
+    ], 200);
 }
 
 
-    public function update(Request $request): JsonResponse
+
+
+   public function update(Request $request): JsonResponse
 {
     $tenantId = $request->header('tenant_id');
 
@@ -130,83 +114,57 @@ class PageConfigController extends Controller
         ], 422);
     }
 
-    $data['updated_by'] = Auth::user()->id;
-
-    // Check if the user has ADMIN or WRITE access
-    $hasPermission = Permission::where('user_id', $data['updated_by'])
-                                ->where('page_config_id', $data['id'])
-                                ->whereIn('access_level', ['ADMIN', 'WRITE'])
-                                ->exists();
-
-    if (!$hasPermission) {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
     // Extract header_img from data
     $headerImg = $data['header_img'];
     unset($data['header_img']);
 
-    try {
-        DB::transaction(function () use ($data, $headerImg, &$pageConfig) {
-            $pageConfig = PageConfig::findOrFail($data['id']);
-            $pageConfig->fill($data);
-            $pageConfig->save();
+    $pageConfig = PageConfig::findOrFail($data['id']);
+    $pageConfig->fill($data);
+    $pageConfig->save();
 
-            // Fetch existing header_img entries
-            $existingHeaderImages = FileMapper::where('ref_id', $pageConfig->id)
-                ->where('ref_type', 'page_config')
-                ->pluck('file_id')
-                ->toArray();
+    // Fetch existing header_img entries
+    $existingHeaderImages = FileMapper::where('ref_id', $pageConfig->id)
+        ->where('ref_type', 'page_config')
+        ->pluck('file_id')
+        ->toArray();
 
-            // Determine entries to add and remove
-            $imagesToAdd = array_diff($headerImg, $existingHeaderImages);
-            $imagesToRemove = array_diff($existingHeaderImages, $headerImg);
+    // Determine entries to add and remove
+    $imagesToAdd = array_diff($headerImg, $existingHeaderImages);
+    $imagesToRemove = array_diff($existingHeaderImages, $headerImg);
 
-            // Delete obsolete header_img entries if there are any
-            if (count($imagesToRemove) > 0) {
-                FileMapper::where('ref_id', $pageConfig->id)
-                    ->where('ref_type', 'page_config')
-                    ->whereIn('file_id', $imagesToRemove)
-                    ->delete();
-            }
-
-            // Add new header_img entries if there are any
-            if (count($imagesToAdd) > 0) {
-                $headerImgData = array_map(function ($fileId) use ($pageConfig, $data) {
-                    return [
-                        'ref_id' => $pageConfig->id,
-                        'ref_type' => 'page_config',
-                        'file_id' => $fileId,
-                        'updated_by' => $data['updated_by'],
-                        'created_at' => $data['updated_at'],
-                        'updated_at' => $data['updated_at']
-                    ];
-                }, $imagesToAdd);
-
-                FileMapper::insert($headerImgData);
-            }
-        });
-
-        $pageConfigArray = $pageConfig->toArray();
-        $pageConfigArray['header_img'] = $headerImg;
-
-        return response()->json([
-            'data' => $pageConfigArray,
-            'message' => 'Success, Page Config updated successfully'
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while updating the page configuration',
-            'error' => $e->getMessage()
-        ], 500);
+    // Delete obsolete header_img entries if there are any
+    if (count($imagesToRemove) > 0) {
+        FileMapper::where('ref_id', $pageConfig->id)
+            ->where('ref_type', 'page_config')
+            ->whereIn('file_id', $imagesToRemove)
+            ->delete();
     }
+
+    // Add new header_img entries if there are any
+    if (count($imagesToAdd) > 0) {
+        foreach ($imagesToAdd as $fileId) {
+            FileMapper::create([
+                'ref_id' => $pageConfig->id,
+                'ref_type' => 'page_config',
+                'file_id' => $fileId,
+                'updated_by' => $data['updated_by'],
+            ]);
+        }
+    }
+
+  
+    $pageConfigArray = $pageConfig->toArray();
+    $pageConfigArray['header_img'] = $headerImg;
+
+    return response()->json([
+        'data' => $pageConfigArray,
+        'message' => 'Success, Page Config updated successfully'
+    ], 200);
 }
 
 
-
-    public function all(Request $request)
-{
+  public function all(Request $request){
+    
     $tenantId = $request->header('tenant_id');
 
     // Validate the tenant_id
@@ -225,7 +183,6 @@ class PageConfigController extends Controller
     $start = $request->input('start', 0);
     $limit = $request->input('limit', 10); 
 
-    $userId = Auth::id();
 
     $totalRows = DB::table('page_config')
         ->where('tenant_id', $tenantId)
@@ -239,26 +196,26 @@ class PageConfigController extends Controller
         ]);
     }
 
-    $pageConfigs = DB::select("SELECT pc.*, concat('[', COALESCE(GROUP_CONCAT(fm.file_id), ''), ']') as header_img
+    $pageConfigs = DB::select("SELECT pc.*, concat('[',COALESCE(GROUP_CONCAT(fm.file_id), ''),']') as header_img
         FROM page_config pc
-        LEFT JOIN file_mapper fm ON fm.ref_id = pc.id AND fm.ref_type = 'page_config'
-        LEFT JOIN permissions p ON p.page_config_id = pc.id AND p.user_id = ?
-        WHERE pc.tenant_id = ?
-        AND (pc.page_type = 'public' OR p.access_level IN ('READ', 'WRITE', 'ADMIN'))
-        GROUP BY pc.id, name, page_type, description, parent, header_text, page_url, tenant_id, created_at, updated_at, seq_no, language, updated_by
-        LIMIT ? OFFSET ? ", [$userId, $tenantId, $limit, $start]);
+        left join file_mapper fm 
+        ON fm.ref_id=pc.id and fm.ref_type='page_config'
+        where pc.tenant_id=" . $tenantId . "
+        Group by pc.id,name,page_type,description,parent,header_text,page_url,tenant_id,created_at,updated_at,seq_no,language,updated_by
+        LIMIT " . $limit . " OFFSET ". $start);
 
-    if (empty($pageConfigs)) {
+
+    if ($pageConfigs==null) {
         return response()->json([
             'success' => false,
             'message' => 'No records found for the provided tenant ID',
         ], 404);
     }
 
-    foreach ($pageConfigs as $r) {
-        $r->header_img = json_decode($r->header_img);
-    }
+    foreach($pageConfigs as $r)
+        $r->header_img=json_decode($r->header_img);
 
+   
     return response()->json([
         'data' => $pageConfigs,
         'totalRows' => $totalRows
@@ -266,8 +223,9 @@ class PageConfigController extends Controller
 }
 
 
-   public function one(Request $request)
+    public function one(Request $request)
 {
+ 
     $tenantId = $request->header('tenant_id');
     $headerValidator = Validator::make(['tenant_id' => $tenantId], [
         'tenant_id' => 'required|integer|exists:tenants,id',
@@ -281,36 +239,36 @@ class PageConfigController extends Controller
         ], 422);
     }
 
+    
     $request->validate([
         'id' => 'required|integer|exists:page_config,id',
     ]);
 
     $id = $request->input('id');
-    $userId = Auth::id();
 
-    $pageConfig = DB::selectOne("SELECT pc.*, CONCAT('[', COALESCE(GROUP_CONCAT(fm.file_id), ''), ']') as header_img
-        FROM page_config pc
-        LEFT JOIN file_mapper fm ON fm.ref_id = pc.id AND fm.ref_type = 'page_config'
-        LEFT JOIN permissions p ON p.page_config_id = pc.id AND p.user_id = ?
-        WHERE pc.tenant_id = ?
-        AND pc.id = ?
-        AND (pc.page_type = 'public' OR p.access_level IN ('READ', 'WRITE', 'ADMIN'))
-        GROUP BY pc.id, name, page_type, description, parent, header_text, page_url, tenant_id, created_at, updated_at, seq_no, language, updated_by ", [$userId, $tenantId, $id]);
+
+    $pageConfig = PageConfig::where([["tenant_id", $tenantId], ["id", $id]])->first();
 
     if (!$pageConfig) {
         return response()->json([
             'success' => false,
-            'message' => 'Page configuration not found or access denied for the provided tenant ID and ID',
+            'message' => 'Page configuration not found for the provided tenant ID and ID',
         ], 404); 
     }
 
-    $pageConfig->header_img = json_decode($pageConfig->header_img);
+    // Fetch header images
+    $headerImages = FileMapper::where('ref_id', $pageConfig->id)
+        ->where('ref_type', 'page_config')
+        ->pluck('file_id')
+        ->toArray();
+    $pageConfig->header_img = $headerImages;
 
     return response()->json($pageConfig);
 }
 
- public function destroy(Request $request)
+    public function destroy(Request $request)
 {
+
     $tenantId = $request->header('tenant_id');
     $headerValidator = Validator::make(['tenant_id' => $tenantId], [
         'tenant_id' => 'required|integer|exists:tenants,id',
@@ -324,24 +282,15 @@ class PageConfigController extends Controller
         ], 422);
     }
 
+   
     $request->validate([
         'id' => 'required|integer|exists:page_config,id',
     ]);
 
-    $id = $request->input('id');
-    $userId = Auth::id();
-
- 
-    $hasAdminAccess = Permission::where('user_id', $userId)
-                                ->where('page_config_id', $id)
-                                ->where('access_level', 'ADMIN')
-                                ->exists();
-
-    if (!$hasAdminAccess) {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
   
+    $id = $request->input('id');
+
+    // Check if the PageConfig exists
     $pageConfig = PageConfig::where([["tenant_id", $tenantId], ["id", $id]])->first();
 
     if (!$pageConfig) {
@@ -351,27 +300,23 @@ class PageConfigController extends Controller
         ], 404); 
     }
 
-    try {
-        DB::transaction(function () use ($id, $pageConfig) {
-            // Delete related entries in the file_mapper table
-            FileMapper::where('ref_id', $id)->where('ref_type', 'page_config')->delete();
+    // Delete related entries in the file_mapper table
+    FileMapper::where('ref_id', $id)->where('ref_type', 'page_config')->delete();
 
-         
-            $pageConfig->delete();
-        });
+    // Delete the PageConfig record
+    $response = $pageConfig->delete();
 
+    if ($response) {
         return response()->json([
             'success' => true,
             'message' => 'Page Config deleted successfully.',
         ], 200); 
-    } catch (\Exception $e) {
+    } else {
         return response()->json([
             'success' => false,
-            'message' => 'An error occurred while deleting the page configuration',
-            'error' => $e->getMessage()
-        ], 500);
+            'message' => 'Page Config could not be deleted',
+        ], 500); 
     }
 }
-
 
 }

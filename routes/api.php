@@ -11,7 +11,7 @@ use App\Http\Controllers\API\ContentConfigController;
 use App\Http\Controllers\CommonController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\TenantController;
-use App\Http\Controllers\PermissionController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -88,11 +88,7 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
         Route::get('user_profile', 'all');
     }); 
 
-    Route::controller(PermissionController::class)->group(function(){
-        Route::post('permissions/grant', 'grantAccess');
-        Route::post('permissions/revoke', 'revokeAccess');
-        Route::put('permissions/update', 'updateAccessLevel');
-    });
+    
 });
 
 // Clear application cache:
