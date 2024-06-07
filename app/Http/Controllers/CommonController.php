@@ -222,18 +222,32 @@ class CommonController extends Controller
 
   public function globalSettings(Request $request): JsonResponse
 {
-   
-    $tenantId = $request->header('tenant_id',0);
+    $tenantId = $request->header('tenant_id', 0);
     $language = $request->header('language', 'english'); // default to 'english'
-  
 
     $globalSettings = [];
     Log::info("tenantId ". $tenantId); 
-    // Fetch page configurations and build menu structure
-    $pageConfig = $this->getPageConfig($tenantId);
+
+ 
+    $userId = null;
+    $globalSettings['avatar'] = "GU";
+    $globalSettings['user_name'] = "Guest";
+    $globalSettings['authenticated'] = false;
+    if (auth('sanctum')->user()) {
+        $username = auth('sanctum')->user()->name;
+        $parts = explode(" ", $username);
+        $avatar = substr($parts[0], 0, 1) . substr($parts[1], 0, 1);
+        $globalSettings['avatar'] = $avatar;
+        $globalSettings['user_name'] = $username;
+        $globalSettings['authenticated'] = true;
+        $userId = auth('sanctum')->user()->id;
+    }
+
+   
+    $pageConfig = $this->getPageConfig($tenantId, $userId);
     $globalSettings['menu'] = $this->getMenus($pageConfig);
 
-
+ 
     $langConfig = Language::select('lang_id', 'lang_name as name')->get()->map(function($lang) {
         return [
             'id' => $lang->lang_id,
@@ -242,10 +256,10 @@ class CommonController extends Controller
     })->toArray();
     $globalSettings['langs'] = $langConfig;
 
-  
+
     $themeColors = ThemeColor::select('label', 'hexCode')->get()->toArray();
     $globalSettings['theme_colors'] = $themeColors;
- 
+
     // Fetch labels with fallback to English
     $labels = DB::select("
         SELECT 
@@ -260,11 +274,12 @@ class CommonController extends Controller
     ", [$tenantId, $language, $tenantId]);
     $labels = collect($labels)->pluck('value', 'key')->toArray();
     $globalSettings['labels'] = $labels;
-    
+
+ 
     $tenants = Tenant::select('id', 'tenant_name as name')->get()->toArray();
     $globalSettings['tenants'] = $tenants;
 
-    
+
     $pageTypes = collect($pageConfig)
         ->pluck('type')
         ->unique()
@@ -275,38 +290,47 @@ class CommonController extends Controller
         ->toArray();
     $globalSettings['page_types'] = $pageTypes;
 
-    
     $globalSettings['content_pages'] = $pageConfig;
 
-    // User authentication details
-    $globalSettings['avatar'] = "GU";
-    $globalSettings['user_name'] = "Guest";
-    $globalSettings['authenticated'] = false;
-    if (auth('sanctum')->user()) {
-        $username = auth('sanctum')->user()->name;
-        $parts = explode(" ", $username);
-        $avatar = substr($parts[0], 0, 1) . substr($parts[1], 0, 1);
-        $globalSettings['avatar'] = $avatar;
-        $globalSettings['user_name'] = $username;
-        $globalSettings['authenticated'] = true;
-    }
-
-    
-    $globalSettings['product_relase_date'] = File::get(base_path() . "/published.txt");
+    $globalSettings['product_release_date'] = File::get(base_path() . "/published.txt");
     $globalSettings['default_theme_color'] = "black";
 
-   
     $json = json_encode($globalSettings);
     return response()->json(json_decode($json));
 }
 
-private function getPageConfig($tenantId)
+
+private function getPageConfig($tenantId, $userId)
 {
-    return PageConfig::where('tenant_id', $tenantId)
-        ->select("id", "page_type AS type", "name", "page_url AS url", "parent")
-        ->get()
-        ->toArray();
+    $bindings = [$userId, $tenantId];
+
+    $query = "
+        SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent
+        FROM page_config pc
+        LEFT JOIN permissions p 
+            ON p.page_config_id = pc.id
+            AND p.user_id = ?
+        WHERE pc.tenant_id = ?
+        AND (
+            pc.page_type = 'public' 
+            OR p.access_level IN ('R', 'RW')
+        )
+    ";
+
+    if (is_null($userId)) {
+        $query = "
+            SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent
+            FROM page_config pc
+            WHERE pc.tenant_id = ?
+            AND pc.page_type = 'public'
+        ";
+        $bindings = [$tenantId];
+    }
+
+    $results = DB::select($query, $bindings);
+    return json_decode(json_encode($results), true);
 }
+
 
 private function getMenus($pageConfig)
 {

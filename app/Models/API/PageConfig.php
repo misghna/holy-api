@@ -7,7 +7,8 @@ namespace App\Models\API;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\FileMapper; 
+use App\Models\FileMapper;
+use App\Models\User; 
 
 class PageConfig extends Model
 {
@@ -30,6 +31,12 @@ class PageConfig extends Model
     public function headerImages()
     {
         return $this->hasMany(FileMapper::class, 'ref_id')->where('ref_type', 'page_config')->where('type', 'header_image');
+    }
+
+    public function usersWithAccess()
+    {
+        return $this->belongsToMany(User::class, 'permissions')
+                    ->withPivot('access_level');
     }
 
 }
