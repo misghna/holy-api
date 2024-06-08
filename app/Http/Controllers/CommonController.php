@@ -220,7 +220,7 @@ class CommonController extends Controller
         return response()->json(json_decode($data));
     }
 
-  public function globalSettings(Request $request): JsonResponse
+ public function globalSettings(Request $request): JsonResponse
 {
     $tenantId = $request->header('tenant_id', 0);
     $language = $request->header('language', 'english'); // default to 'english'
@@ -228,7 +228,7 @@ class CommonController extends Controller
     $globalSettings = [];
     Log::info("tenantId ". $tenantId); 
 
- 
+    // User authentication details
     $userId = null;
     $globalSettings['avatar'] = "GU";
     $globalSettings['user_name'] = "Guest";
@@ -243,11 +243,11 @@ class CommonController extends Controller
         $userId = auth('sanctum')->user()->id;
     }
 
-   
+    // Fetch page configurations and build menu structure
     $pageConfig = $this->getPageConfig($tenantId, $userId);
     $globalSettings['menu'] = $this->getMenus($pageConfig);
 
- 
+    // Fetch languages
     $langConfig = Language::select('lang_id', 'lang_name as name')->get()->map(function($lang) {
         return [
             'id' => $lang->lang_id,
@@ -256,7 +256,7 @@ class CommonController extends Controller
     })->toArray();
     $globalSettings['langs'] = $langConfig;
 
-
+    // Fetch theme colors
     $themeColors = ThemeColor::select('label', 'hexCode')->get()->toArray();
     $globalSettings['theme_colors'] = $themeColors;
 
@@ -275,11 +275,11 @@ class CommonController extends Controller
     $labels = collect($labels)->pluck('value', 'key')->toArray();
     $globalSettings['labels'] = $labels;
 
- 
+    // Fetch tenants
     $tenants = Tenant::select('id', 'tenant_name as name')->get()->toArray();
     $globalSettings['tenants'] = $tenants;
 
-
+    // Fetch page types
     $pageTypes = collect($pageConfig)
         ->pluck('type')
         ->unique()
@@ -300,12 +300,13 @@ class CommonController extends Controller
 }
 
 
+
 private function getPageConfig($tenantId, $userId)
 {
     $bindings = [$userId, $tenantId];
 
     $query = "
-        SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent
+        SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent, pc.seq_no
         FROM page_config pc
         LEFT JOIN permissions p 
             ON p.page_config_id = pc.id
@@ -315,14 +316,16 @@ private function getPageConfig($tenantId, $userId)
             pc.page_type = 'public' 
             OR p.access_level IN ('R', 'RW')
         )
+        ORDER BY FIELD(pc.page_type, 'public', 'secure'), pc.seq_no, pc.id
     ";
 
     if (is_null($userId)) {
         $query = "
-            SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent
+            SELECT pc.id, pc.page_type AS type, pc.name, pc.page_url AS url, pc.parent, pc.seq_no
             FROM page_config pc
             WHERE pc.tenant_id = ?
             AND pc.page_type = 'public'
+            ORDER BY pc.seq_no, pc.id
         ";
         $bindings = [$tenantId];
     }
@@ -330,6 +333,7 @@ private function getPageConfig($tenantId, $userId)
     $results = DB::select($query, $bindings);
     return json_decode(json_encode($results), true);
 }
+
 
 
 private function getMenus($pageConfig)
@@ -347,6 +351,14 @@ private function getMenus($pageConfig)
         }
     }
 
+    foreach ($itemsByReference as &$item) {
+        if (!empty($item['sub_menu'])) {
+            usort($item['sub_menu'], function ($a, $b) {
+                return $a['seq_no'] <=> $b['seq_no'] ?: $a['id'] <=> $b['id'];
+            });
+        }
+    }
+
     foreach ($pageConfig as $key => &$item) {
         if ($item['parent'] && isset($itemsByReference[$item['parent']])) {
             unset($pageConfig[$key]);
@@ -355,6 +367,7 @@ private function getMenus($pageConfig)
 
     return array_values($pageConfig);
 }
+
 
 
 
