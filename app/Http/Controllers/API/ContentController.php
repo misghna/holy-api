@@ -24,9 +24,9 @@ class ContentController extends Controller
             'type' => 'required|string',
             'title' => 'required|string',
             'description' => 'required|string',
-            'background_image' => 'required|array',
+            'background_image' => 'required|int',
             'content_text' => 'required|string',
-            'media_link' => 'required|string',
+            'media_link' => 'required|array',
             'content_category' => 'required|string',
             'lang' => 'required|string',
             'is_original' => 'required|boolean',
@@ -48,31 +48,31 @@ class ContentController extends Controller
             ], 422);
         }
 
-        // Extract background_image from data
-        $backgroundImg = $data['background_image'];
-        unset($data['background_image']);
+        // Extract media_link from data
+        $mediaLink = $data['media_link'];
+        unset($data['media_link']);
 
         $data['updated_by'] = Auth::user()->id;
         $content = Content::create($data);
 
-        
 
-        $backgroundImgData = array_map(function ($fileId) use ($content, $data) {
+
+        $mediaLinkData = array_map(function ($fileId) use ($content, $data) {
             return [
                 'ref_id' => $content->id,
-                'ref_type' => 'content',
+                'ref_type' => 'content_media_link',
                 'file_id' => $fileId,
                 'updated_by' => $data['updated_by'],
                 'created_at' => $data['created_at'],
                 'updated_at' => $data['updated_at']
             ];
-        }, $backgroundImg);
-    
+        }, $mediaLink);
+
         // Bulk insert background_image data into FileMapper
-        FileMapper::insert($backgroundImgData);
-    
+        FileMapper::insert($mediaLinkData);
+
         $contentArray = $content->toArray();
-        $contentArray['background_image'] = $backgroundImg;
+        $contentArray['media_link'] = $mediaLink;
 
         return response()->json([
             'content' => $contentArray,
@@ -82,16 +82,16 @@ class ContentController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        
+
         $tenantId = $request->header('tenant_id');
         $valRules = [
             'id' => 'required|integer',
             'type' => 'required|string',
             'title' => 'required|string',
             'description' => 'required|string',
-            'background_image' => 'required|array',
+            'background_image' => 'required|int',
             'content_text' => 'required|string',
-            'media_link' => 'required|string',
+            'media_link' => 'required|array',
             'content_category' => 'required|string',
             'lang' => 'required|string',
             'is_original' => 'required|boolean',
@@ -116,53 +116,53 @@ class ContentController extends Controller
         $data['updated_by'] = Auth::user()->id;
 
         // Extract background_image from data
-        $backgroundImg = $data['background_image'];
-        unset($data['background_image']);
+        // $backgroundImg = $data['background_image'];
+        // unset($data['background_image']);
+        $mediaLink = $data['media_link'];
+        unset($data['media_link']);
 
         $id = $request->input('id');
         $content = Content::findOrFail($id);
         $content->fill($data);
         $content->save();
 
-        // Fetch existing background_image entries
+        // Fetch existing media_link entries
         $existingBgImages = FileMapper::where('ref_id', $content->id)
-        ->where('ref_type', 'content')
-        ->pluck('file_id')
-        ->toArray();
+            ->where('ref_type', 'content_media_link')
+            ->pluck('file_id')
+            ->toArray();
 
         // Determine entries to add and remove
-        $imagesToAdd = array_diff($backgroundImg, $existingBgImages);
-        $imagesToRemove = array_diff($existingBgImages, $backgroundImg);
-        
-        // Delete obsolete background_image entries if there are any
+        $imagesToAdd = array_diff($mediaLink, $existingBgImages);
+        $imagesToRemove = array_diff($existingBgImages, $mediaLink);
+
+        // Delete obsolete media_link entries if there are any
         if (count($imagesToRemove) > 0) {
             FileMapper::where('ref_id', $content->id)
-                ->where('ref_type', 'content')
+                ->where('ref_type', 'content_media_link')
                 ->whereIn('file_id', $imagesToRemove)
                 ->delete();
         }
-        // Add new background_image entries if there are any
+        // Add new media_link entries if there are any
         if (count($imagesToAdd) > 0) {
             foreach ($imagesToAdd as $fileId) {
                 FileMapper::create([
                     'ref_id' => $content->id,
-                    'ref_type' => 'content',
+                    'ref_type' => 'content_media_link',
                     'file_id' => $fileId,
                     'updated_by' => $data['updated_by'],
                 ]);
             }
         }
 
-    
-        $contentArray = $content->toArray();
-        $contentArray['background_image'] = $backgroundImg;
 
+        $contentArray = $content->toArray();
+        $contentArray['media_link'] = $mediaLink;
 
         return response()->json([
             'contentConfig' => $contentArray,
             'message' => 'Success, Content Config updated successfully'
         ], 200);
-
     }
 
     public function all(Request $request)
@@ -185,26 +185,49 @@ class ContentController extends Controller
             'content_category' => 'required|string',
             'lang' => 'required|string',
         ]);
-        
+
         $content_category = $request->input("content_category");
-        $lang = $request->input('lang','english');
+        $lang = $request->input('lang', 'english');
         $start = $request->input('start', 0); // Default to 0 if not provided
         $limit = $request->input('limit', 10); // Default to 10 if not provided
 
-        $content = Content::with('media_link')->where("lang", $lang)
-            ->select('content.id', 'content.lang', 'content.type','content.title','content.description','content.content_text','content.content_category',DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),
-            DB::raw('concat("[",COALESCE(GROUP_CONCAT(file_mapper.file_id), ""),"]") as background_image'))
-            ->leftJoin('file_mapper', function($join) {
-                $join->on('file_mapper.ref_id', '=', 'content.id');
-              })
-            ->where([["content_category", $content_category],['lang',$lang],['tenant_id',$tenantId]])
+        $content = Content::select(
+            'content.id',
+            'content.lang',
+            'content.type',
+            'content.title',
+            'content.description',
+            'content.content_text',
+            'f.file_id as background_image',
+            'content.content_category',
+            DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),
+            'fc.file_id as m_link'
+        )
+            ->leftJoin('file_mapper AS fmml', function ($query) {
+                $query->on('fmml.ref_id', '=', 'content.id');
+                $query->where('fmml.ref_type', '=', 'content_media_link')
+                    ->leftJoin('files AS fc', function ($query1) {
+                        $query1->on('fc.id', '=', 'fmml.file_id');
+                    });
+            })
+            ->leftJoin('files AS f', function ($join) {
+                $join->on('f.id', '=', 'content.background_image');
+            })
+            ->where([["content_category", $content_category], ['lang', $lang], ['content.tenant_id', $tenantId]])
             ->offset($start)
             ->limit($limit)
-            ->groupBy("content.id")
             ->get();
-
-
-        return $content;
+        $response = [];
+        foreach ($content as $c) {
+            $c->background_image = asset('/storage/uploaded/' . $c->background_image);
+            $arr = json_decode(json_encode($c), true);
+            if (key_exists($c->id, $response)) {
+                $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+            }
+            $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
+            $response[$c->id] = $arr;
+        }
+        return array_values($response);
     }
 
     public function one(Request $request)
@@ -223,7 +246,7 @@ class ContentController extends Controller
         }
 
         $id = $request->input('id');
-        
+
         $request->validate([
             'id' => 'required|integer',
             'content_category' => 'required|string',
@@ -232,18 +255,54 @@ class ContentController extends Controller
         $content_category = $request->input("content_category");
         $id = $request->input('id');
         $lang = $request->input('lang');
-        $tenantId = $request->header('tenant_id',0); 
+        $tenantId = $request->header('tenant_id', 0);
 
-        $content = Content::with('media_link')
-            ->select('content.id', 'content.lang', 'content.type','content.title','content.media_link','content.description','content.content_category',DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),DB::raw('concat("[",COALESCE(GROUP_CONCAT(file_mapper.file_id), ""),"]") as background_image'))
-            ->leftJoin('file_mapper', function($join) {
-                $join->on('file_mapper.ref_id', '=', 'content.id');
-              })
-              ->where([["content.id", $id],["content_category", $content_category],['lang',$lang],['tenant_id',$tenantId]])
-            ->groupBy("content.id")
-            ->first();
+        $content = Content::select(
+            'content.id',
+            'content.lang',
+            'content.type',
+            'content.title',
+            'content.description',
+            'content.content_text',
+            'f.file_id as background_image',
+            'content.content_category',
+            DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),
+            'fc.file_id as m_link'
+        )
+            ->leftJoin('file_mapper AS fmml', function ($query) {
+                $query->on('fmml.ref_id', '=', 'content.id');
+                $query->where('fmml.ref_type', '=', 'content_media_link')
+                    ->leftJoin('files AS fc', function ($query1) {
+                        $query1->on('fc.id', '=', 'fmml.file_id');
+                    });
+            })
+            ->leftJoin('files AS f', function ($join) {
+                $join->on('f.id', '=', 'content.background_image');
+            })
+            ->where([["content.id", $id], ["content_category", $content_category], ['lang', $lang], ['content.tenant_id', $tenantId]])
+            ->get();
+        // $content = Content::with('media_link')
+        //     ->select('content.id', 'content.lang', 'content.type', 'content.title', 'content.media_link', 'content.description', 'content.content_category', DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'), DB::raw('concat("[",COALESCE(GROUP_CONCAT(file_mapper.file_id), ""),"]") as background_image'))
+        //     ->leftJoin('file_mapper', function ($join) {
+        //         $join->on('file_mapper.ref_id', '=', 'content.id');
+        //     })
+        //     ->where([["content.id", $id], ["content_category", $content_category], ['lang', $lang], ['tenant_id', $tenantId]])
+        //     ->groupBy("content.id")
+        //     ->first();
 
-        return $content;
+        $response = [];
+        foreach ($content as $c) {
+            $c->background_image = asset('/storage/uploaded/' . $c->background_image);
+            $arr = json_decode(json_encode($c), true);
+            if (key_exists($c->id, $response)) {
+                $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+            }
+            $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
+            $response[$c->id] = $arr;
+        }
+        if (isset($response[$id]))
+            return $response[$id];
+        return null;
     }
 
     public function destroy(Request $request)
@@ -257,5 +316,4 @@ class ContentController extends Controller
             return "Content deleted successfully.";
         else return "Content not found";
     }
-
 }

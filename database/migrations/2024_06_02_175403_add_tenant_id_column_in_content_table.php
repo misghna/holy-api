@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::table('content', function (Blueprint $table) {
             $table->integer('tenant_id');
+            $table->dropColumn('media_link');
+            $table->integer('background_image')->change();
         });
     }
 
@@ -22,7 +24,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('content', function (Blueprint $table) {
-            $table->dropColumn('tenant_id');
+            // $table->dropColumn('tenant_id');
+            // $table->string('media_link');
         });
     }
 };

@@ -77,11 +77,11 @@ class FileController extends Controller
                 $img = Image::make($file->getRealPath());
                 $img->resize(150, 150, function ($const) {
                     $const->aspectRatio();
-                })->save(storage_path() . '/uploaded/thumbnails/' . $fileId);
+                })->save(storage_path() . '/app/public/uploaded/thumbnails/' . $fileId);
                 // // end of TN
 
                 $fileName = $file->getClientOriginalName();
-                $file->move(storage_path() . '/uploaded/', $fileId);
+                $file->move(storage_path() . '/app/public/uploaded/', $fileId);
 
                 $onefile['group_id'] = $uuid;
                 $onefile['file_id'] = $fileId;
