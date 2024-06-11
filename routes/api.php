@@ -12,6 +12,7 @@ use App\Http\Controllers\CommonController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\TenantController;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -85,7 +86,9 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
         Route::put('user_profile', 'update');
         Route::delete('user_profile', 'destroy');
         Route::get('user_profile', 'all');
-    });
+    }); 
+
+    
 });
 
 // Clear application cache:
