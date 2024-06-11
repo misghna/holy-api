@@ -17,7 +17,7 @@ use Log;
 
 class CommonController extends Controller
 {
-    public function globalSettings1(Request $request): JsonResponse
+    public function globalSettings(Request $request): JsonResponse
     {
         $data = '{
                 "menu":
@@ -220,7 +220,7 @@ class CommonController extends Controller
         return response()->json(json_decode($data));
     }
 
-  public function globalSettings(Request $request): JsonResponse
+  public function globalSettings1(Request $request): JsonResponse
 {
    
     $tenantId = $request->header('tenant_id',0);
