@@ -13,14 +13,13 @@ class Content extends Model
         'type',
         'title',
         'description',
-        'background_image',
         'content_text',
-        'media_link',
         'content_category',
         'lang',
         'is_original',
         'auto_translate',
         'is_draft',
+        'background_image',
         'updated_by',
         'tenant_id'
     ];

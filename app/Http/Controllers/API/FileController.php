@@ -67,21 +67,21 @@ class FileController extends Controller
             $index = 1;
             foreach ($request->file('files') as $file) {
                 
-                $fileType = strtolower($file->extension());
+                $ext = $fileType = strtolower($file->extension());
                 if(in_array ($fileType,$images)) $fileType ="image";
 
-                $fileId = $uuid . '_' . $index . '.' . $fileType;   
+                $fileId = $uuid . '_' . $index . '.' . $ext;   
                 
                 //save thumbnail                
                 Log::info("path : " . storage_path()); 
                 $img = Image::make($file->getRealPath());
                 $img->resize(150, 150, function ($const) {
                     $const->aspectRatio();
-                })->save(storage_path() . '/uploaded/thumbnails/' . $fileId);
+                })->save(storage_path() . '/app/public/uploaded/thumbnails/' . $fileId);
                 // // end of TN
 
                 $fileName = $file->getClientOriginalName();
-                $file->move(storage_path() . '/uploaded/', $fileId);
+                $file->move(storage_path() . '/app/public/uploaded/', $fileId);
 
                 $onefile['group_id'] = $uuid;
                 $onefile['file_id'] = $fileId;
