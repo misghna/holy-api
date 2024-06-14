@@ -115,3 +115,7 @@ Route::get('/view-clear', function() {
     return 'View cache has been cleared';
 });
 
+Route::get('/storage-link', function() {
+    Artisan::call('storage:link');
+    return 'public access of files granted';
+});
