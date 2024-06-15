@@ -72,7 +72,15 @@ class FileController extends Controller
 
                 $fileId = $uuid . '_' . $index . '.' . $ext;   
                 
-                //save thumbnail                
+                //save thumbnail         
+                $bgImage = storage_path() . '/app/public/uploaded/';  
+                if (!file_exists($bgImage)) {
+                    mkdir($bgImage, 0777, true);
+                } 
+                $bgThumbnailImage = storage_path() . '/app/public/uploaded/thumbnails/';  
+                if (!file_exists($bgThumbnailImage)) {
+                    mkdir($bgThumbnailImage, 0777, true);
+                }        
                 Log::info("path : " . storage_path()); 
                 $img = Image::make($file->getRealPath());
                 $img->resize(150, 150, function ($const) {
