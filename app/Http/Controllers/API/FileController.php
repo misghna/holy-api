@@ -101,6 +101,19 @@ class FileController extends Controller
                 $files[] = $onefile;
                 $index++;
             }
+        }else if($request->input("url")){
+
+            $fileId = $request->input("url");
+            $index = 1;
+            $fileType = 'url';
+            $onefile['group_id'] = $uuid;
+            $onefile['file_id'] = $fileId;
+            $onefile['file_name'] = $fileId;
+            $onefile['file_type'] = $fileType;
+            $onefile['tenant_id'] = $tenantId;    
+            $onefile['created_at'] = gmdate('Y-m-d H:i:s'); 
+            $onefile['created_by'] = Auth::user()->id;                
+            $files[] = $onefile;
         }
         foreach ($files as $key => $file) {
             File::create($file);

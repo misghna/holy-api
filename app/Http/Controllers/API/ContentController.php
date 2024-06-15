@@ -201,7 +201,8 @@ class ContentController extends Controller
             'f.file_id as background_image',
             'content.content_category',
             DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),
-            'fc.file_id as m_link'
+            'fc.file_id as m_link',
+            'fc.file_type',
         )
             ->leftJoin('file_mapper AS fmml', function ($query) {
                 $query->on('fmml.ref_id', '=', 'content.id');
@@ -219,12 +220,16 @@ class ContentController extends Controller
             ->get();
         $response = [];
         foreach ($content as $c) {
-            $c->background_image = asset('/storage/uploaded/' . $c->background_image);
+            if ($c->background_image)
+                $c->background_image = asset('/storage/uploaded/' . $c->background_image);
             $arr = json_decode(json_encode($c), true);
-            if (key_exists($c->id, $response)) {
-                $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+
+            if ($c->file_type != 'url') {
+                if (key_exists($c->id, $response)) {
+                    $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+                }
+                $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
             }
-            $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
             $response[$c->id] = $arr;
         }
         return array_values($response);
@@ -267,7 +272,8 @@ class ContentController extends Controller
             'f.file_id as background_image',
             'content.content_category',
             DB::raw('UNIX_TIMESTAMP(content.created_at)*1000 AS release_date_time'),
-            'fc.file_id as m_link'
+            'fc.file_id as m_link',
+            'fc.file_type',
         )
             ->leftJoin('file_mapper AS fmml', function ($query) {
                 $query->on('fmml.ref_id', '=', 'content.id');
@@ -292,12 +298,15 @@ class ContentController extends Controller
 
         $response = [];
         foreach ($content as $c) {
-            $c->background_image = asset('/storage/uploaded/' . $c->background_image);
+            if ($c->background_image)
+                $c->background_image = asset('/storage/uploaded/' . $c->background_image);
             $arr = json_decode(json_encode($c), true);
-            if (key_exists($c->id, $response)) {
-                $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+            if ($c->file_type != 'url') {
+                if (key_exists($c->id, $response)) {
+                    $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
+                }
+                $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
             }
-            $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
             $response[$c->id] = $arr;
         }
         if (isset($response[$id]))
