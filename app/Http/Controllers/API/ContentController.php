@@ -222,13 +222,15 @@ class ContentController extends Controller
         foreach ($content as $c) {
             if ($c->background_image)
                 $c->background_image = asset('/storage/uploaded/' . $c->background_image);
-            $arr = json_decode(json_encode($c), true);
 
+            $arr = json_decode(json_encode($c), true);
             if ($c->file_type != 'url') {
                 if (key_exists($c->id, $response)) {
                     $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
                 }
                 $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
+            }else{
+                $arr['media_link'][] = $c->m_link;
             }
             $response[$c->id] = $arr;
         }
@@ -306,6 +308,8 @@ class ContentController extends Controller
                     $arr['media_link'][] = asset('/storage/uploaded/' . $response[$c->id]['m_link']);
                 }
                 $arr['media_link'][] = asset('/storage/uploaded/' . $c->m_link);
+            }else{
+                $arr['media_link'][] = $c->m_link;
             }
             $response[$c->id] = $arr;
         }
