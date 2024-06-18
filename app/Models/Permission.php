@@ -14,7 +14,8 @@ class Permission extends Model
     protected $fillable = [
         'user_id',
         'page_config_id',
-        'access_level'
+        'access_level',
+        'updated_by'
     ];
 
     public function user()
@@ -25,5 +26,10 @@ class Permission extends Model
     public function pageConfig()
     {
         return $this->belongsTo(PageConfig::class);
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

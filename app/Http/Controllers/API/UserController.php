@@ -89,31 +89,70 @@ class UserController extends Controller
     }
 
 
-    public function all(Request $request): JsonResponse
+ public function all(Request $request): JsonResponse
 {
     $currentUserId = Auth::id();
+    $tenantId = $request->header('tenant_id');
 
-    if (!$this->hasAccess($currentUserId, ['R', 'RW'])) {
+    if (!$this->hasAccess($currentUserId, ['R', 'RW'], $tenantId)) {
         return response()->json([
             'success' => false,
             'message' => 'Unauthorized to view users.'
         ], 403);
     }
 
-    $users = User::select("id", "name", "email", "phone_number")->get()->toArray();
-    if ($users) {
-        foreach ($users as &$user) {
-            $permissions = Permission::where('user_id', $user['id'])
-                ->get()
-                ->groupBy('pageConfig.name')
-                ->map(function ($item) {
-                    return $item->pluck('access_level')->first();
-                });
+    // Eager load permissions and page configs for users
+    $users = User::select("id", "name", "email", "phone_number")
+        ->with(['permissions' => function ($query) use ($tenantId) {
+            $query->whereHas('pageConfig', function ($query) use ($tenantId) {
+                $query->where('tenant_id', $tenantId);
+            });
+        }])
+        ->get();
 
-            foreach ($permissions as $pageName => $accessLevel) {
-                $user[str_replace(' ', '_', strtolower($pageName))] = $accessLevel;
+    if ($users->isNotEmpty()) {
+        $securePageNames = PageConfig::where('tenant_id', $tenantId)
+                                     ->where('page_type', 'secure')
+                                     ->pluck('name')
+                                     ->toArray();
+
+        $usersData = $users->map(function ($user) use ($securePageNames) {
+            $userArray = $user->only(['id', 'name', 'email', 'phone_number']);
+            $permissions = $user->permissions->groupBy('pageConfig.name')->map(function ($item) {
+                return [
+                    'access_level' => $item->pluck('access_level')->first(),
+                    'updated_at' => $item->pluck('updated_at')->max(),
+                    'updated_by' => $item->pluck('updated_by')->first()
+                ];
+            });
+
+            // Set updated_at and updated_by to null initially
+            $userArray['updated_at'] = null;
+            $userArray['updated_by'] = null;
+
+            foreach ($permissions as $pageName => $details) {
+                $userArray[str_replace(' ', '_', strtolower($pageName))] = $details['access_level'];
+                if ($details['updated_at']) {
+                    $userArray['updated_at'] = $details['updated_at'];
+                }
+                if ($details['updated_by']) {
+                    $userArray['updated_by'] = User::where('id', $details['updated_by'])->value('name');
+                }
             }
-        }
+
+            // Include secure page names with 'access_level' if not already included
+            foreach ($securePageNames as $securePageName) {
+                $key = str_replace(' ', '_', strtolower($securePageName));
+                if (!isset($userArray[$key])) {
+                    $userArray[$key] = 'N'; // Default to 'N' for no access
+                }
+            }
+
+            // Remove the 'permissions' key
+            unset($userArray['permissions']);
+
+            return $userArray;
+        });
 
         $columns = [
             ["value" => "id", "name" => "Id"],
@@ -122,9 +161,19 @@ class UserController extends Controller
             ["value" => "phone_number", "name" => "Phone Number"]
         ];
 
+        foreach ($securePageNames as $securePageName) {
+            $columns[] = [
+                "value" => str_replace(' ', '_', strtolower($securePageName)),
+                "name" => $securePageName
+            ];
+        }
+
+        $columns[] = ["value" => "updated_at", "name" => "Updated At"];
+        $columns[] = ["value" => "updated_by", "name" => "Updated By"];
+
         return response()->json([
             'columns' => $columns,
-            'data' => $users
+            'data' => $usersData->toArray()
         ], 200);
     } else {
         return response()->json([
@@ -134,127 +183,131 @@ class UserController extends Controller
 }
 
     public function store(Request $request): JsonResponse
-    {
-        $currentUserId = Auth::id();
-
-        if (!$this->hasAccess($currentUserId, 'RW')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to add a new user.'
-            ], 403);
-        }
-
-        $valRules = [
-            'name' => 'required|string',
-            'email' => 'required|string',
-            'phone_number' => 'required|string',
-            'access' => 'required|array'
-        ];
-
-        $data = $request->input();
-        $data['created_at'] = gmdate('Y-m-d H:i:s');
-        $data['updated_at'] = gmdate('Y-m-d H:i:s');
-
-        $validator = Validator::make($data, $valRules);
-
-        if (!$validator->passes()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()->all()
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            $user = User::create($data);
-
-            // Save permissions
-            $this->savePermissions($user->id, $data['access']);
-
-            DB::commit();
-
-            return response()->json([
-                'data' => $user,
-                'message' => 'Success, User added successfully'
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add user or permissions',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function update(Request $request): JsonResponse
-    {
-        $currentUserId = Auth::id();
-
-        if (!$this->hasAccess($currentUserId, 'RW')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to update the user.'
-            ], 403);
-        }
-
-        $valRules = [
-            'id' => 'required|integer',
-            'name' => 'required|string',
-            'email' => 'required|string',
-            'phone_number' => 'required|string',
-            'access' => 'required|array'
-        ];
-
-        $data = $request->input();
-        $data['created_at'] = gmdate('Y-m-d H:i:s');
-        $data['updated_at'] = gmdate('Y-m-d H:i:s');
-
-        $validator = Validator::make($data, $valRules);
-
-        if (!$validator->passes()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()->all()
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            $user = User::findOrFail($data['id']);
-            $user->fill($data);
-            $user->save();
-
-            // Save permissions
-            $this->savePermissions($user->id, $data['access']);
-
-            DB::commit();
-
-            return response()->json([
-                'data' => $user,
-                'message' => 'Success, User updated successfully'
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update user or permissions',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function one(Request $request): JsonResponse
 {
     $currentUserId = Auth::id();
+    $tenantId = $request->header('tenant_id'); 
 
-    if (!$this->hasAccess($currentUserId, ['R', 'RW'])) {
+    if (!$this->hasAccess($currentUserId, 'RW', $tenantId)) { 
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized to add a new user.'
+        ], 403);
+    }
+
+    $valRules = [
+        'name' => 'required|string',
+        'email' => 'required|string|email|unique:users,email',
+        'phone_number' => 'required|string',
+        'access' => 'required|array'
+    ];
+
+    $data = $request->input();
+    $data['created_at'] = gmdate('Y-m-d H:i:s');
+    $data['updated_at'] = gmdate('Y-m-d H:i:s');
+
+    $validator = Validator::make($data, $valRules);
+
+    if (!$validator->passes()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation errors',
+            'errors' => $validator->errors()->all()
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $user = User::create($data);
+
+        // Save permissions
+        $this->savePermissions($user->id, $data['access'], $tenantId, $currentUserId ); 
+
+        DB::commit();
+
+        return response()->json([
+            'data' => $user,
+            'message' => 'Success, User added successfully'
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to add user or permissions',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+  public function update(Request $request): JsonResponse
+{
+    $currentUserId = Auth::id();
+    $tenantId = $request->header('tenant_id'); 
+
+    if (!$this->hasAccess($currentUserId, 'RW', $tenantId)) { 
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized to update the user.'
+        ], 403);
+    }
+
+    $valRules = [
+        'id' => 'required|integer',
+        'name' => 'required|string',
+        'email' => 'required|string|email|unique:users,email,' . $request->input('id'),
+        'phone_number' => 'required|string',
+        'access' => 'required|array'
+    ];
+
+    $data = $request->input();
+    $data['updated_at'] = gmdate('Y-m-d H:i:s'); 
+
+    $validator = Validator::make($data, $valRules);
+
+    if (!$validator->passes()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation errors',
+            'errors' => $validator->errors()->all()
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $user = User::findOrFail($data['id']);
+        $user->fill($data);
+        $user->save();
+
+       
+        $this->savePermissions($user->id, $data['access'], $tenantId, $currentUserId ); 
+
+        DB::commit();
+
+        return response()->json([
+            'data' => $user,
+            'message' => 'Success, User updated successfully'
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update user or permissions',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+ public function one(Request $request): JsonResponse
+{
+    $currentUserId = Auth::id();
+    $tenantId = $request->header('tenant_id'); 
+
+    if (!$this->hasAccess($currentUserId, ['R', 'RW'], $tenantId)) { 
         return response()->json([
             'success' => false,
             'message' => 'Unauthorized to view user.'
@@ -271,19 +324,35 @@ class UserController extends Controller
         ->first();
 
     if ($user) {
+        $securePageNames = PageConfig::where('tenant_id', $tenantId)
+                                     ->where('page_type', 'secure')
+                                     ->pluck('name')
+                                     ->toArray();
+
         $permissions = Permission::where('user_id', $id)
+            ->whereHas('pageConfig', function ($query) use ($tenantId) {
+                $query->where('tenant_id', $tenantId);
+            })
             ->get()
             ->groupBy('pageConfig.name')
             ->map(function ($item) {
                 return $item->pluck('access_level')->first();
             });
 
-        foreach ($permissions as $pageName => $accessLevel) {
-            $user[str_replace(' ', '_', strtolower($pageName))] = $accessLevel;
+        $accessArray = [];
+
+        // Include permissions and default to 'N' for secure pages without access
+        $uniquePages = array_unique(array_merge($securePageNames, $permissions->keys()->toArray()));
+
+        foreach ($uniquePages as $pageName) {
+            $key = str_replace(' ', '_', strtolower($pageName));
+            $accessArray[] = [
+                $key => $permissions->get($pageName, 'N')
+            ];
         }
 
         $userArray = $user->toArray();
-        $userArray['access'] = $permissions;
+        $userArray['access'] = $accessArray;
 
         return response()->json($userArray, 200);
     } else {
@@ -291,11 +360,13 @@ class UserController extends Controller
     }
 }
 
-    public function destroy(Request $request): JsonResponse
+
+   public function destroy(Request $request): JsonResponse
 {
     $currentUserId = Auth::id();
+    $tenantId = $request->header('tenant_id'); 
 
-    if (!$this->hasAccess($currentUserId, 'RW')) {
+    if (!$this->hasAccess($currentUserId, 'RW', $tenantId)) { 
         return response()->json([
             'success' => false,
             'message' => 'Unauthorized to delete user.'
@@ -313,8 +384,12 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-          
-            Permission::where('user_id', $id)->delete();
+            // Delete permissions within the tenant context
+            Permission::where('user_id', $id)
+                ->whereHas('pageConfig', function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                })
+                ->delete();
 
             $user->delete();
 
@@ -338,74 +413,77 @@ class UserController extends Controller
     }
 }
 
-    private function savePermissions($userId, $accessData)
-    {
-        if (!is_array($accessData)) {
-            throw new \Exception("Access data must be an array.");
-        }
 
-        $pageConfigIds = [];
-        $invalidPages = [];
-
-      
-        foreach ($accessData as $access) {
-            if (!is_array($access) || count($access) !== 1) {
-                throw new \Exception("Each access entry must be an object with a single key-value pair.");
-            }
-            foreach ($access as $key => $value) {
-                $pageConfigIds[strtolower($key)] = $this->getPageConfigId(strtolower($key));
-            }
-        }
-
-    
-        foreach ($pageConfigIds as $pageConfigName => $pageConfigId) {
-            if (!$pageConfigId) {
-                $invalidPages[] = $pageConfigName;
-            }
-        }
-
-     
-        if (!empty($invalidPages)) {
-            throw new \Exception("Page configuration(s) do not exist: " . implode(', ', $invalidPages));
-        }
-
-        // Clear existing permissions for the user
-        Permission::where('user_id', $userId)->delete();
-
-
-        $bulkInsertData = [];
-        $timestamp = gmdate('Y-m-d H:i:s');
-
-        foreach ($accessData as $access) {
-            foreach ($access as $key => $value) {
-                $bulkInsertData[] = [
-                    'user_id' => $userId,
-                    'page_config_id' => $pageConfigIds[strtolower($key)],
-                    'access_level' => $value,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp
-                ];
-            }
-        }
-
-        // Bulk insert permissions
-        Permission::insert($bulkInsertData);
+    private function savePermissions($userId, $accessData, $tenantId, $currentUserId )
+{
+    if (!is_array($accessData)) {
+        throw new \Exception("Access data must be an array.");
     }
 
-    private function getPageConfigId($pageConfigName)
-    {
-        return PageConfig::where(DB::raw('lower(name)'), strtolower($pageConfigName))->value('id');
+    $pageConfigIds = [];
+    $invalidPages = [];
+
+    foreach ($accessData as $access) {
+        if (!is_array($access) || count($access) !== 1) {
+            throw new \Exception("Each access entry must be an object with a single key-value pair.");
+        }
+        foreach ($access as $key => $value) {
+            $pageConfigIds[strtolower($key)] = $this->getPageConfigId(strtolower($key), $tenantId);
+        }
     }
 
-     private function hasAccess($userId, $requiredAccessLevel)
-    {
-        return Permission::where('user_id', $userId)
-            ->whereHas('pageConfig', function ($query) {
-                $query->where(DB::raw('lower(name)'), 'user profile');
-            })
-            ->whereIn('access_level', (array) $requiredAccessLevel)
-            ->exists();
+    foreach ($pageConfigIds as $pageConfigName => $pageConfigId) {
+        if (!$pageConfigId) {
+            $invalidPages[] = $pageConfigName;
+        }
     }
+
+    if (!empty($invalidPages)) {
+        throw new \Exception("Page configuration(s) do not exist: " . implode(', ', $invalidPages));
+    }
+
+    // Clear existing permissions for the user
+    Permission::where('user_id', $userId)->delete();
+
+    $bulkInsertData = [];
+    $timestamp = gmdate('Y-m-d H:i:s');
+
+    foreach ($accessData as $access) {
+        foreach ($access as $key => $value) {
+            $bulkInsertData[] = [
+                'user_id' => $userId,
+                'page_config_id' => $pageConfigIds[strtolower($key)],
+                'access_level' => $value,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+                'updated_by' => $currentUserId 
+            ];
+        }
+    }
+
+  
+    Permission::insert($bulkInsertData);
+}
+
+
+    private function getPageConfigId($pageConfigName, $tenantId)
+{
+    return PageConfig::where(DB::raw('lower(name)'), strtolower($pageConfigName))
+                     ->where('tenant_id', $tenantId)
+                     ->value('id');
+}
+
+     private function hasAccess($userId, $requiredAccessLevel, $tenantId)
+{
+    return Permission::where('user_id', $userId)
+        ->whereHas('pageConfig', function ($query) use ($tenantId) {
+            $query->where(DB::raw('lower(name)'), 'user profile')
+                  ->where('tenant_id', $tenantId);
+        })
+        ->whereIn('access_level', (array) $requiredAccessLevel)
+        ->exists();
+}
+
     
 
 
