@@ -101,7 +101,7 @@ class UserController extends Controller
         ], 403);
     }
 
-    // Eager load permissions and page configs for users
+   
     $users = User::select("id", "name", "email", "phone_number")
         ->with(['permissions' => function ($query) use ($tenantId) {
             $query->whereHas('pageConfig', function ($query) use ($tenantId) {
@@ -126,7 +126,7 @@ class UserController extends Controller
                 ];
             });
 
-            // Set updated_at and updated_by to null initially
+          
             $userArray['updated_at'] = null;
             $userArray['updated_by'] = null;
 
@@ -140,15 +140,14 @@ class UserController extends Controller
                 }
             }
 
-            // Include secure page names with 'access_level' if not already included
+            
             foreach ($securePageNames as $securePageName) {
                 $key = str_replace(' ', '_', strtolower($securePageName));
                 if (!isset($userArray[$key])) {
-                    $userArray[$key] = 'N'; // Default to 'N' for no access
+                    $userArray[$key] = 'N'; 
                 }
             }
 
-            // Remove the 'permissions' key
             unset($userArray['permissions']);
 
             return $userArray;
@@ -220,7 +219,7 @@ class UserController extends Controller
     try {
         $user = User::create($data);
 
-        // Save permissions
+  
         $this->savePermissions($user->id, $data['access'], $tenantId, $currentUserId ); 
 
         DB::commit();
@@ -341,7 +340,7 @@ class UserController extends Controller
 
         $accessArray = [];
 
-        // Include permissions and default to 'N' for secure pages without access
+        
         $uniquePages = array_unique(array_merge($securePageNames, $permissions->keys()->toArray()));
 
         foreach ($uniquePages as $pageName) {
@@ -384,7 +383,7 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            // Delete permissions within the tenant context
+            
             Permission::where('user_id', $id)
                 ->whereHas('pageConfig', function ($query) use ($tenantId) {
                     $query->where('tenant_id', $tenantId);
@@ -442,7 +441,7 @@ class UserController extends Controller
         throw new \Exception("Page configuration(s) do not exist: " . implode(', ', $invalidPages));
     }
 
-    // Clear existing permissions for the user
+    
     Permission::where('user_id', $userId)->delete();
 
     $bulkInsertData = [];
