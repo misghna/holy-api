@@ -413,7 +413,7 @@ class UserController extends Controller
 }
 
 
-    private function savePermissions($userId, $accessData, $tenantId, $currentUserId )
+  private function savePermissions($userId, $accessData, $tenantId, $currentUserId)
 {
     if (!is_array($accessData)) {
         throw new \Exception("Access data must be an array.");
@@ -427,7 +427,9 @@ class UserController extends Controller
             throw new \Exception("Each access entry must be an object with a single key-value pair.");
         }
         foreach ($access as $key => $value) {
-            $pageConfigIds[strtolower($key)] = $this->getPageConfigId(strtolower($key), $tenantId);
+            // Replace underscores with spaces in keys
+            $formattedKey = strtolower(str_replace('_', ' ', $key));
+            $pageConfigIds[$formattedKey] = $this->getPageConfigId($formattedKey, $tenantId);
         }
     }
 
@@ -441,7 +443,6 @@ class UserController extends Controller
         throw new \Exception("Page configuration(s) do not exist: " . implode(', ', $invalidPages));
     }
 
-    
     Permission::where('user_id', $userId)->delete();
 
     $bulkInsertData = [];
@@ -449,18 +450,18 @@ class UserController extends Controller
 
     foreach ($accessData as $access) {
         foreach ($access as $key => $value) {
+            $formattedKey = strtolower(str_replace('_', ' ', $key));
             $bulkInsertData[] = [
                 'user_id' => $userId,
-                'page_config_id' => $pageConfigIds[strtolower($key)],
+                'page_config_id' => $pageConfigIds[$formattedKey],
                 'access_level' => $value,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
-                'updated_by' => $currentUserId 
+                'updated_by' => $currentUserId
             ];
         }
     }
 
-  
     Permission::insert($bulkInsertData);
 }
 
