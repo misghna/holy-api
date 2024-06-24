@@ -33,10 +33,6 @@ class PageConfig extends Model
         return $this->hasMany(FileMapper::class, 'ref_id')->where('ref_type', 'page_config')->where('type', 'header_image');
     }
 
-    public function usersWithAccess()
-    {
-        return $this->belongsToMany(User::class, 'permissions')
-                    ->withPivot('access_level');
-    }
+    
 
 }
