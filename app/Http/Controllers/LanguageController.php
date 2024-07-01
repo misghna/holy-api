@@ -23,7 +23,6 @@ class LanguageController extends Controller
 
     public function geOneDict(Request $request)
     {
-
        $key = $request->input('key');
        if(is_null($key)) return response()->json(['message' => 'Missing Key!'], 400);
 
@@ -37,15 +36,13 @@ class LanguageController extends Controller
             $dataKey = $row['key'].'-'.$row['language'];
             $langDict[$dataKey] = $row['value'];
         }
-        Log::info($langDict);
 
-        $counter=1;$row=[];$rows=[];
+        $row=[];
 
         $row['Key']=$key;
         foreach($languages as $lang){
             $langName=$lang['lang_name'];
             $dataKey = $key . '-' . $lang['lang_id'];
-            Log::info($dataKey);
             $dicVal = isset($langDict[$dataKey])? $langDict[$dataKey] : 'Not Set';
             $row[$langName]=$dicVal;             
         }
@@ -89,52 +86,58 @@ class LanguageController extends Controller
 
     public function updateDict(Request $request)
     {
-                
-        Log::info("hello");
-        $tenantId = $request->header('tenant_id',0); 
+
+        $tenantId = $request->header('tenant_id', 0); 
         $valRules = ['key' => 'required|string'];
         $validatedData = json_decode($request->getContent(), true);
+        
         $validator = Validator::make($validatedData, $valRules);
-
-        $key = $validatedData['Key'];
-
-        Log::info("hello2");
-
-        $dictionary = Dictionary::select('key','language','value')
-        ->where([['tenant_id',$tenantId],['key',$key]])->get();
-        $langDict=[];
-        foreach($dictionary as $row){
-             $lang = $row['language'];
-             $langDict[$lang] = $row;
-         }
-
-         Log::info("hello3");
-
-        $languages = Language::select('lang_id', 'lang_name')->get();
-        foreach($languages as $lang){
-            $langName=$lang['lang_name'];
-            if(isset($validatedData[$langName]) && !is_null($validatedData[$langName]) && $validatedData[$langName] !="Not Set"){
-                $lang = $lang['lang_id'];
-                if(isset($langDict[$lang]) && $langDict[$lang]['value'] != $validatedData[$langName]){ // update
-                    $row = $langDict[$lang];
-                    $row['value']=$validatedData[$langName];
-                    $language->update($validatedData);
-                
-                }else if (!isset($langDict[$lang])){  // add new
-                    $newRow =["key"=>$key,"language",$lang['lang_id'],"tenant_id",tenantId, "value"=>$validatedData[$langName],"updated_by"=>Auth::user()->id];
-                    $language->post($validatedData);
-                }
-            }
-
-            $dataKey = $lang['lang_id'];
-            Log::info($dataKey);
-            $dicVal = isset($langDict[$dataKey])? $langDict[$dataKey] : 'Not Set';
-            $row[$langName]=$dicVal;             
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
         }
 
-        $language->update($validatedData);
-        return response()->json($language);
+        $key = $validatedData['key'];  
+
+
+        $dictionary = Dictionary::select('key', 'language', 'value')
+            ->where([['tenant_id', $tenantId], ['key', $key]])
+            ->get()
+            ->keyBy('language'); 
+
+        $languages = Language::select('lang_id', 'lang_name')->get();
+
+        foreach ($languages as $lang) {
+            $langName = $lang['lang_name'];
+            $langId = $lang['lang_id'];
+            
+            if (isset($validatedData[$langName]) && !is_null($validatedData[$langName]) && $validatedData[$langName] != "Not Set") {
+                if (isset($dictionary[$langId])) {
+                    if ($dictionary[$langId]['value'] != $validatedData[$langName]) {
+                        Dictionary::where([['tenant_id', $tenantId], ['key', $key], ['language', $langId]])
+                            ->update(['value' => $validatedData[$langName], 'updated_by' => Auth::user()->id]);
+                    }
+                } else {  
+                    Dictionary::create([
+                        'key' => $key,
+                        'language' => $langId,
+                        'tenant_id' => $tenantId,
+                        'value' => $validatedData[$langName],
+                        'updated_by' => Auth::user()->id
+                    ]);
+                }
+            }
+        }
+
+
+
+        $updatedDictionary = Dictionary::select('key', 'language', 'value')
+            ->where('tenant_id', $tenantId)
+            ->where('key', $key)
+            ->get();
+
+        return response()->json($updatedDictionary);
     }
+
 
     /**
      * Store a newly created resource in storage.
