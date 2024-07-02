@@ -52,36 +52,65 @@ class LanguageController extends Controller
     }
 
     public function getDict(Request $request)
-    {
+{
 
-       $tenantId = $request->header('tenant_id',0); 
-       $languages = Language::select('lang_id', 'lang_name')->get();
-       $dictionary = Dictionary::select('key','language','value')->where([['tenant_id',$tenantId]])->get();
-       $keys=[];$langDict=[];
-       foreach($dictionary as $row){
-            if(!in_array($row['key'],$keys)) $keys[]=$row['key'];
-            $dataKey = $row['key'].'-'.$row['language'];
-            $langDict[$dataKey] = $row['value'];
+
+    $tenantId = $request->header('tenant_id', 0); 
+    $languages = Language::select('lang_id', 'lang_name')->get();
+
+    
+    $dictionary = Dictionary::select(
+            'dictionary.key',
+            'dictionary.language',
+            'dictionary.value',
+            'users.name as updated_by',
+            'tenants.tenant_name'
+        )
+        ->leftJoin('users', 'dictionary.updated_by', '=', 'users.id')
+        ->leftJoin('tenants', 'dictionary.tenant_id', '=', 'tenants.id')
+        ->where('dictionary.tenant_id', $tenantId)
+        ->get();
+
+    $keys = [];
+    $langDict = [];
+    $updatedBy = [];
+    $tenantName = '';
+
+    foreach ($dictionary as $row) {
+        if (!in_array($row['key'], $keys)) {
+            $keys[] = $row['key'];
         }
-        Log::info($langDict);
-
-        $counter=1;$row=[];$rows=[];
-        foreach($keys as $key){
-            $row['id']=$counter;
-            $row['Key']=$key;
-            foreach($languages as $lang){
-                $langName=$lang['lang_name'];
-                $dataKey = $key . '-' . $lang['lang_id'];
-                Log::info($dataKey);
-                $dicVal = isset($langDict[$dataKey])? $langDict[$dataKey] : 'Not Set';
-                $row[$langName]=$dicVal;             
-            }
-            $counter++;
-            $rows[]=$row;
-        }
-
-       return response()->json($rows);
+        $dataKey = $row['key'] . '-' . $row['language'];
+        $langDict[$dataKey] = $row['value'];
+        $updatedBy[$row['key']] = $row['updated_by'];
+        $tenantName = $row['tenant_name'];
     }
+
+
+
+    $counter = 1;
+    $row = [];
+    $rows = [];
+
+    foreach ($keys as $key) {
+        $row['id'] = $counter;
+        $row['Key'] = $key;
+        $row['updated_by'] = isset($updatedBy[$key]) ? $updatedBy[$key] : 'Unknown';
+        $row['tenant_name'] = $tenantName;
+
+        foreach ($languages as $lang) {
+            $langName = $lang['lang_name'];
+            $dataKey = $key . '-' . $lang['lang_id'];
+            $dicVal = isset($langDict[$dataKey]) ? $langDict[$dataKey] : 'Not Set';
+            $row[$langName] = $dicVal;             
+        }
+        $counter++;
+        $rows[] = $row;
+    }
+
+    return response()->json($rows);
+}
+
 
 
     public function updateDict(Request $request)
