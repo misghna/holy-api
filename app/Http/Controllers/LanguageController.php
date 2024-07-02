@@ -14,13 +14,121 @@ class LanguageController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
+    public function index(Request $request)
+{   
+    $tenantId = $request->header('tenant_id', 0);
+    $languages = Language::select(
+            'languages.id',
+            'languages.lang_id',
+            'languages.lang_name',
+            'tenants.tenant_name',
+            'users.name as updated_by',
+            'languages.updated_at',
+            
+        )
+        ->leftJoin('tenants', 'languages.tenant_id', '=', 'tenants.id')
+        ->leftJoin('users', 'languages.updated_by', '=', 'users.id')
+        ->where('languages.tenant_id', $tenantId)
+        ->get();
 
-       $languages = Language::select('id','lang_id', 'lang_name','tenant_id','updated_at')->get();
-       return response()->json($languages);
+    return response()->json($languages);
+}
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+{
+    $validatedData = $request->validate([
+        'lang_id' => 'required|string|unique:languages',
+        'lang_name' => 'required|string',
+    ]);
+
+    $tenantId = $request->header('tenant_id', 0); 
+    $validatedData['tenant_id'] = $tenantId;
+
+    $validatedData['updated_by'] = Auth::id();
+
+    $language = Language::create($validatedData);
+
+    return response()->json($language, 201);
+}
+
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Request $request)
+{
+    $id = $request->input('id');
+    
+    $language = Language::select(
+            'languages.id',
+            'languages.lang_id',
+            'languages.lang_name',
+            'tenants.tenant_name',
+            'users.name as updated_by',
+            'languages.updated_at',
+            
+        )
+        ->leftJoin('tenants', 'languages.tenant_id', '=', 'tenants.id')
+        ->leftJoin('users', 'languages.updated_by', '=', 'users.id')
+        ->where('languages.id', $id)
+        ->first();
+    
+    if (!$language) {
+        return response()->json(['error' => 'Language not found'], 404);
     }
 
+    return response()->json($language);
+}
+
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request)
+{
+    $validatedData = $request->validate([
+        'id' => 'required|integer',
+        'lang_id' => 'required|string',
+        'lang_name' => 'required|string',
+    ]);
+    
+    $tenantId = $request->header('tenant_id', 0); 
+    $validatedData['tenant_id'] = $tenantId;
+
+    $language = Language::find($validatedData['id']);
+    
+    if (!$language) {
+        return response()->json(['error' => 'Language not found'], 404);
+    }
+
+    $validatedData['updated_by'] = Auth::id();
+
+    $language->update($validatedData);
+
+    return response()->json($language);
+}
+
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request)
+    {
+        $id = $request->input('id');
+        $language = Language::find($id);
+        if(!$language)
+        {
+            return response()->json(['error' => 'Language not found'], 404);
+        }
+        $language->delete();
+        return response()->json(['message' => 'Language deleted Successfully']);
+    }
+
+
+    
     public function geOneDict(Request $request)
     {
        $key = $request->input('key');
@@ -49,7 +157,7 @@ class LanguageController extends Controller
         $rows[]=$row;
 
        return response()->json($row);
-    }
+}
 
     public function getDict(Request $request)
 {
@@ -111,126 +219,66 @@ class LanguageController extends Controller
     return response()->json($rows);
 }
 
-
-
     public function updateDict(Request $request)
-    {
+{
+    $tenantId = $request->header('tenant_id', 0); 
+    $valRules = ['key' => 'required|string'];
+    $validatedData = json_decode($request->getContent(), true);
+    
+    $validator = Validator::make($validatedData, $valRules);
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 422);
+    }
 
-        $tenantId = $request->header('tenant_id', 0); 
-        $valRules = ['key' => 'required|string'];
-        $validatedData = json_decode($request->getContent(), true);
+    $key = $validatedData['key'];  
+
+    $dictionary = Dictionary::select('key', 'language', 'value')
+        ->where([['tenant_id', $tenantId], ['key', $key]])
+        ->get()
+        ->keyBy('language'); 
+
+    $languages = Language::select('lang_id', 'lang_name')->get();
+
+    foreach ($languages as $lang) {
+        $langName = $lang['lang_name'];
+        $langId = $lang['lang_id'];
         
-        $validator = Validator::make($validatedData, $valRules);
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
-        }
-
-        $key = $validatedData['key'];  
-
-
-        $dictionary = Dictionary::select('key', 'language', 'value')
-            ->where([['tenant_id', $tenantId], ['key', $key]])
-            ->get()
-            ->keyBy('language'); 
-
-        $languages = Language::select('lang_id', 'lang_name')->get();
-
-        foreach ($languages as $lang) {
-            $langName = $lang['lang_name'];
-            $langId = $lang['lang_id'];
-            
-            if (isset($validatedData[$langName]) && !is_null($validatedData[$langName]) && $validatedData[$langName] != "Not Set") {
-                if (isset($dictionary[$langId])) {
-                    if ($dictionary[$langId]['value'] != $validatedData[$langName]) {
-                        Dictionary::where([['tenant_id', $tenantId], ['key', $key], ['language', $langId]])
-                            ->update(['value' => $validatedData[$langName], 'updated_by' => Auth::user()->id]);
-                    }
-                } else {  
-                    Dictionary::create([
-                        'key' => $key,
-                        'language' => $langId,
-                        'tenant_id' => $tenantId,
-                        'value' => $validatedData[$langName],
-                        'updated_by' => Auth::user()->id
-                    ]);
+        if (isset($validatedData[$langName]) && !is_null($validatedData[$langName]) && $validatedData[$langName] != "Not Set") {
+            if (isset($dictionary[$langId])) {
+                if ($dictionary[$langId]['value'] != $validatedData[$langName]) {
+                    Dictionary::where([['tenant_id', $tenantId], ['key', $key], ['language', $langId]])
+                        ->update(['value' => $validatedData[$langName], 'updated_by' => Auth::user()->id]);
                 }
+            } else {  
+                Dictionary::create([
+                    'key' => $key,
+                    'language' => $langId,
+                    'tenant_id' => $tenantId,
+                    'value' => $validatedData[$langName],
+                    'updated_by' => Auth::user()->id
+                ]);
             }
         }
-
-
-
-        $updatedDictionary = Dictionary::select('key', 'language', 'value')
-            ->where('tenant_id', $tenantId)
-            ->where('key', $key)
-            ->get();
-
-        return response()->json($updatedDictionary);
     }
 
+    $updatedDictionary = Dictionary::select('key', 'language', 'value')
+        ->where('tenant_id', $tenantId)
+        ->where('key', $key)
+        ->get()
+        ->keyBy('language');
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'lang_id' => 'required|string|unique:languages',
-            'lang_name' => 'required|string',
-        ]);
-        $tenantId = $request->header('tenant_id',0); 
-        $validatedData['tenant_id']=$tenantId;
+    $response = [
+        'Key' => $key
+    ];
 
-        $language = Language::create($validatedData);
-        return response()->json($language, 201);
+    foreach ($languages as $lang) {
+        $langName = $lang['lang_name'];
+        $langId = $lang['lang_id'];
+        $response[$langName] = isset($updatedDictionary[$langId]) ? $updatedDictionary[$langId]['value'] : 'Not Set';
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        $language = Language::find($id);
-        if(!$language)
-        {
-            return response()->json(['error' => 'Language not found'], 404);
-        }
-        return response()->json($language);
-    }
+    return response()->json($response);
+}
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request)
-    {
-        $validatedData = $request->validate([
-            'id' => 'required|integer',
-            'lang_id' => 'required|string',
-            'lang_name' => 'required|string',
-        ]);
-        
-        $tenantId = $request->header('tenant_id',0); 
-        $validatedData['tenant_id']=$tenantId;
 
-        $language = Language::find( $validatedData['id']);
-        if(!$language)
-        {
-            return response()->json(['error' => 'Language not found'], 404);
-        }
-        $language->update($validatedData);
-        return response()->json($language);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $language = Language::find($id);
-        if(!$language)
-        {
-            return response()->json(['error' => 'Language not found'], 404);
-        }
-        $language->delete();
-        return response()->json(['message' => 'Language deleted Successfully']);
-    }
 }
