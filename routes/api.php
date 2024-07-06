@@ -59,8 +59,10 @@ Route::group(['prefix' => 'protected','middleware' => ['auth:sanctum']], functio
 
     Route::controller(LanguageController::class)->group(function(){
         Route::get('languages', 'index');
+        Route::get('language', 'show');
         Route::post('languages', 'store');
         Route::put('languages', 'update');
+        Route::delete('language', 'destroy');
 
         Route::get('dictionaries', 'getDict');
         Route::get('dictionary', 'geOneDict');
