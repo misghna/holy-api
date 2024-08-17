@@ -219,10 +219,13 @@ class PageConfigController extends Controller
 
     $pageConfigs = DB::select("
         SELECT pc.*, 
-               CONCAT('[', COALESCE(GROUP_CONCAT(fm.file_id), ''), ']') AS header_img,
-               u.name AS updated_by_name
+               COALESCE(GROUP_CONCAT(f.file_id), '') AS header_img,
+               u.name AS updated_by_name,
+               pcparent.name AS parent
         FROM page_config pc
+        LEFT JOIN page_config pcparent ON pc.parent = pcparent.id
         LEFT JOIN file_mapper fm ON fm.ref_id = pc.id AND fm.ref_type = 'page_config'
+        LEFT JOIN files f ON f.id = fm.file_id
         LEFT JOIN users u ON u.id = pc.updated_by
         WHERE pc.tenant_id = ?
         GROUP BY pc.id, pc.name, pc.page_type, pc.description, pc.parent, pc.header_text, 
@@ -239,7 +242,8 @@ class PageConfigController extends Controller
     }
 
     foreach ($pageConfigs as $r) {
-        $r->header_img = json_decode($r->header_img);
+        // $r->header_img = json_decode($r->header_img);
+        $r->header_img = explode(',', $r->header_img);
         $r->updated_by = $r->updated_by_name; 
         unset($r->updated_by_name); 
     }
