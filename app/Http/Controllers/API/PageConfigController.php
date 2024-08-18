@@ -230,7 +230,7 @@ class PageConfigController extends Controller
         WHERE pc.tenant_id = ?
         GROUP BY pc.id, pc.name, pc.page_type, pc.description, pc.parent, pc.header_text, 
                  pc.page_url, pc.tenant_id, pc.created_at, pc.updated_at, pc.seq_no, 
-                 pc.language, pc.updated_by, u.name
+                 pc.language, pc.updated_by, u.name, pcparent.name
         LIMIT ? OFFSET ?
     ", [$tenantId, $limit, $start]);
 
