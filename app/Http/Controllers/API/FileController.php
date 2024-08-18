@@ -17,7 +17,7 @@ class FileController extends Controller
     {
         $Id = $request->input('id');
         $isThumbnail = $request->input('thumbnail');
-        $fileDir = storage_path() . "/uploaded/";
+        $fileDir = storage_path() . '/app/public/uploaded/';
         $path = $isThumbnail ? $fileDir . "thumbnails/" : $fileDir ;
         $tenantId = $request->header('tenant_id',0); 
 
