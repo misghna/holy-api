@@ -23,10 +23,10 @@ class ContentFactory extends Factory
         return [
             'type' => $types[rand(0,2)],
             'title' => 'names',
-            'background_image' => fake()->imageUrl(),
+            'background_image' => 1,//fake()->intege(),
             'content_text' => 'parent',
             'description' => fake()->paragraph(),
-            'media_link' => fake()->imageUrl(),
+            // 'media_link' => fake()->imageUrl(),
             'content_category' => $category[rand(0,2)],
             'lang' => $languges[rand(0,1)],
             "is_original" => true,
@@ -34,7 +34,8 @@ class ContentFactory extends Factory
             'created_at' => now(),
             'updated_at' => now(),
             'is_draft' => true,
-            'updated_by'=> User::inRandomOrder()->first()
+            'updated_by'=> User::inRandomOrder()->first(),
+            'tenant_id' => 12121
         ];
     }
 }

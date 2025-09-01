@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone_number');
-            $table->json('access_config');
+            $table->string('phone_number')->nullable();
+            $table->json('access_config')->nullable();
             $table->string('password')->nullable()->change();
         });
     }
