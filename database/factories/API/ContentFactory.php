@@ -35,7 +35,7 @@ class ContentFactory extends Factory
             'updated_at' => now(),
             'is_draft' => true,
             'updated_by'=> User::inRandomOrder()->first(),
-            'tenant_id' => 12121
+            'tenant_id' => 1
         ];
     }
 }
