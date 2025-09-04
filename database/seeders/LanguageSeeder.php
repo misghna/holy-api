@@ -16,11 +16,11 @@ class LanguageSeeder extends Seeder
         Language::truncate();
 
        $languages = [
-            ['lang_id' => 'english', 'lang_name' => 'English'],
-            ['lang_id' => 'amharic', 'lang_name' => 'ኣምሓርኛ'],
-            ['lang_id' => 'tigrigna', 'lang_name' => 'ትግርኛ'],
-            ['lang_id' => 'arabic', 'lang_name' => 'عربي'],
-            ['lang_id' => 'spanish', 'lang_name' => 'española']
+            ['lang_id' => 'english', 'lang_name' => 'English', 'tenant_id' => 1],
+            ['lang_id' => 'amharic', 'lang_name' => 'ኣምሓርኛ', 'tenant_id' => 1],
+            ['lang_id' => 'tigrigna', 'lang_name' => 'ትግርኛ', 'tenant_id' => 1],
+            ['lang_id' => 'arabic', 'lang_name' => 'عربي', 'tenant_id' => 1],
+            ['lang_id' => 'spanish', 'lang_name' => 'española', 'tenant_id' => 1]
             //Add more languages as needed
         ];
         Language::insert($languages);

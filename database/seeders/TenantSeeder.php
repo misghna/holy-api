@@ -13,7 +13,7 @@ class TenantSeeder extends Seeder
      */
     public function run(): void
     {
-        Tenant::truncate();
+        // Tenant::truncate();
 
        $tenants = [
            [ 
